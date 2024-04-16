@@ -23,8 +23,6 @@ MAX_QUERIES = 10000
 RADIUS = 25000
 
 def generate_random_us_coordinates():
-    # Latitude for the mainland US approximately ranges from 24.5 to 49
-    # Longitude for the mainland US approximately ranges from -125 to -67
     latitude = np.random.uniform(24.5, 49.0)
     longitude = np.random.uniform(-125.0, -67.0)
     return latitude, longitude
@@ -34,8 +32,6 @@ chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--disable-gpu")
 
-# set this to the path of the driver you download @ https://chromedriver.storage.googleapis.com/index.html
-# os.environ['PATH'] += r"/Documents/CS1430_Projects/chromedriver_mac_arm64/chromedriver"
 driver = webdriver.Chrome(options=chrome_options)
 
 hits = 0
