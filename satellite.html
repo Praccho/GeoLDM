@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Drawing tools</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+      #map {
+        height: 100%;
+      }
+      html, body {
+        height: 95%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <a id="staticLink" href="#" target="_blank" title="Show static map" style="display:none;">Show static map</a>
+    <script>
+      function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: 28.45765, lng: -16.363564},
+          zoom: 19,
+          mapTypeId: google.maps.MapTypeId.SATELLITE
+        });
+
+        var drawingManager = new google.maps.drawing.DrawingManager({
+          drawingMode: google.maps.drawing.OverlayType.RECTANGLE,
+          drawingControl: true,
+          drawingControlOptions: {
+            position: google.maps.ControlPosition.TOP_CENTER,
+            drawingModes: ['rectangle']
+          }
+        });
+        drawingManager.setMap(map);
+        
+        google.maps.event.addListener(drawingManager, "rectanglecomplete", function(rectangle){
+          function distanceInPx(pos1, pos2) {
+              var p1 = map.getProjection().fromLatLngToPoint(pos1);
+              var p2 = map.getProjection().fromLatLngToPoint(pos2);
+
+              var pixelSize = Math.pow(2, -map.getZoom());
+
+              var d = Math.sqrt((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y))/pixelSize;
+
+              return Math.round(d);
+          }
+          
+          var zoom = map.zoom;
+          var centre = rectangle.getBounds().getCenter(); //rectangle is the shape drawn on the map
+          var spherical = google.maps.geometry.spherical;
+          bounds = rectangle.getBounds(); //rectangle is the shape drawn on the map
+          var cor1 = bounds.getNorthEast();
+          var cor2 = bounds.getSouthWest();
+          var cor3 = new google.maps.LatLng(cor2.lat(), cor1.lng()); 
+          var cor4 = new google.maps.LatLng(cor1.lat(), cor2.lng()); 
+          
+          var width = distanceInPx(cor1, cor4);
+          var height = distanceInPx(cor1, cor3); 
+          
+          var imgUrl = "https://maps.googleapis.com/maps/api/staticmap?center=" + 
+              centre.lat() + "," + centre.lng() + "&zoom=" + zoom + 
+              "&size=" + width + "x" + height + "&maptype=satellite&key=AIzaSyDztlrk_3CnzGHo7CFvLFqE_2bUKEq1JEU";
+          
+          var aElem = document.getElementById("staticLink");
+          aElem.setAttribute("href", imgUrl);
+          aElem.style.display="block";
+          
+        });
+        
+      }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDztlrk_3CnzGHo7CFvLFqE_2bUKEq1JEU&libraries=drawing&callback=initMap"
+         async defer></script>
+  </body>
+</html>
