@@ -1,10 +1,11 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const https = require('https');
+const API_KEY = 'put something here'
 
 async function captureMapImage(lat, lng) {
     // Generate the image URL
-    const imageUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=19&size=600x400&maptype=satellite&key=AIzaSyBYjvDRRKVHdWJM-0gkaRilP8CaNG6DG9M`;
+    const imageUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=19&size=600x400&maptype=satellite&key='+ API_KEY + '-0gkaRilP8CaNG6DG9M`;
 
     // Define where you want to save the image, ensuring you use the correct path and filename
     const savePath = `C:\\Users\\seoli\\testing images\\map_${lat}_${lng}.png`;
