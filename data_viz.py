@@ -2,6 +2,7 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 import os
 
+import json
 
 latitudes = []
 longitudes = []
@@ -14,6 +15,12 @@ for filename in os.listdir('data/street'):
     lat, lng = lat_lng.split(',')
     latitudes.append(float(lat))
     longitudes.append(float(lng))
+
+#hi praccho i am saving these coordinates
+coordinates = [{'lat': lat, 'lng': lng} for lat, lng in zip(latitudes, longitudes)]
+with open('coordinates.json', 'w') as f:
+    json.dump(coordinates, f)
+
 
 fig, ax = plt.subplots()
 
