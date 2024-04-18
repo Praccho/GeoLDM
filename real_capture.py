@@ -1,16 +1,20 @@
 import requests
 from PIL import Image
 from io import BytesIO
+import json 
+import os
+from dotenv import load_dotenv
+import random
+
+load_dotenv()
+API_KEY = os.getenv('API_KEY')
 
 # Replace these with your actual details
-API_KEY = ''
-latitude = 40.7128
-longitude = -74.0060
 IMG_OUT_SIZE = 300  # The size of the cropped image
 
 def fetch_and_crop_image(lat, lng, api_key, img_out_size, out_path):
     # Construct the Google Maps Static API URL
-    img_url = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lng}&zoom=12&size=600x600&maptype=satellite&key={api_key}"
+    img_url = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lng}&zoom=19&size=600x600&maptype=satellite&key={api_key}"
 
     try:
         # Fetch the image
@@ -32,6 +36,15 @@ def fetch_and_crop_image(lat, lng, api_key, img_out_size, out_path):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-# Example usage
-output_path = "C:\\Users\\seoli\\GeoLDM\\data\\satellite\\map_image.png"
-fetch_and_crop_image(latitude, longitude, API_KEY, IMG_OUT_SIZE, output_path)
+with open('coordinates.json', 'r') as f:
+    coordinates = json.load(f)
+
+
+satellite_dir = "data\satellite"
+os.makedirs(satellite_dir, exist_ok=True)
+
+for coord in coordinates:
+    lat = coord['lat']
+    lng = coord['lng']
+    output_path = os.path.join(satellite_dir, f"{lat},{lng}_satellite.png")
+    fetch_and_crop_image(lat, lng, API_KEY, IMG_OUT_SIZE, output_path)
