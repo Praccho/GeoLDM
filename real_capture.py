@@ -9,15 +9,11 @@ import random
 load_dotenv()
 API_KEY = os.getenv('API_KEY')
 
-# Replace these with your actual details
-IMG_OUT_SIZE = 300  # The size of the cropped image
-
+IMG_OUT_SIZE = 400  
 def fetch_and_crop_image(lat, lng, api_key, img_out_size, out_path):
-    # Construct the Google Maps Static API URL
     img_url = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lng}&zoom=19&size=600x600&maptype=satellite&key={api_key}"
 
     try:
-        # Fetch the image
         response = requests.get(img_url)
         if response.status_code == 200:
             img = Image.open(BytesIO(response.content))
@@ -27,7 +23,6 @@ def fetch_and_crop_image(lat, lng, api_key, img_out_size, out_path):
             right = (img.width + img_out_size) / 2
             bottom = (img.height + img_out_size) / 2
 
-            # Crop and save the image
             img_cropped = img.crop((left, top, right, bottom))
             img_cropped.save(out_path)
             print(f"Image successfully saved to {out_path}")
