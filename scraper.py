@@ -9,9 +9,13 @@ from PIL import Image
 from io import BytesIO
 from dotenv import load_dotenv
 import os
+import geopandas as gpd
+from shapely.geometry import Point
 
-IMG_SIZE = 384
-IMG_OUT_SIZE = 256
+IMG_SIZE = 400
+STRT_IMG_OUT_SIZE = 256
+SAT_IMG_OUT_SIZE = 384
+
 API_ENDPOINT = 'https://maps.googleapis.com/maps/api/streetview'
 
 load_dotenv()
@@ -22,10 +26,20 @@ NUM_IMAGES = 1000
 MAX_QUERIES = 10000
 RADIUS = 25000
 
+
+# gdf = gpd.read_file('assets/cb_2018_us_state_500k.shp')
+
+# def is_point_in_us_mainland(lat, lng):
+#     point = Point(lng, lat)
+#     return any(gdf.contains(point))
+
 def generate_random_us_coordinates():
-    latitude = np.random.uniform(24.5, 49.0)
-    longitude = np.random.uniform(-125.0, -67.0)
-    return latitude, longitude
+    while True:
+        latitude = np.random.uniform(24.5, 49.0)
+        longitude = np.random.uniform(-125.0, -67.0)
+        # if is_point_in_us_mainland(latitude, longitude):
+        #     print("hit")
+        return latitude, longitude
 
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--no-sandbox")
@@ -35,8 +49,6 @@ chrome_options.add_argument("--disable-gpu")
 driver = webdriver.Chrome(options=chrome_options)
 
 hits = 0
-seen = 0
-total = 0
 
 for i in range(MAX_QUERIES):
     if hits == NUM_IMAGES:
@@ -61,27 +73,39 @@ for i in range(MAX_QUERIES):
         api_request = f'{API_ENDPOINT}?size={IMG_SIZE}x{IMG_SIZE}&location={loc}&fov=80&heading={rand_heading}&pitch=0&key={API_KEY}'
         driver.get(api_request)
         
-        out_path = f'data/street/{loc}_street.png'
+        street_out_path = f'data/street/{loc}_street.png'
+        sat_out_path = f'data/satellite/{loc}_sat.png'
 
-        if os.path.exists(out_path):
-            seen += 1
+        if os.path.exists(street_out_path):
             continue
 
         try:
             image_url = driver.find_element(By.TAG_NAME, 'img').get_attribute('src')
             response = requests.get(image_url)
-            img = Image.open(BytesIO(response.content))
-            left = (img.width - IMG_OUT_SIZE) / 2
-            top = (img.height - IMG_OUT_SIZE) / 2
-            right = (img.width + IMG_OUT_SIZE) / 2
-            bottom = (img.height + IMG_OUT_SIZE) / 2
+            street_img = Image.open(BytesIO(response.content))
+            left = (street_img.width - STRT_IMG_OUT_SIZE) / 2
+            top = (street_img.height - STRT_IMG_OUT_SIZE) / 2
+            right = (street_img.width + STRT_IMG_OUT_SIZE) / 2
+            bottom = (street_img.height + STRT_IMG_OUT_SIZE) / 2
         
-            img_cropped = img.crop((left, top, right, bottom))
-            img_cropped.save(out_path)
-            hits += 1
+            street_img_cropped = street_img.crop((left, top, right, bottom))
         except:
-            pass
-    total += 1
+            continue
 
-print("seen:", seen)
-print(f"hit rate: {hits}/{total} =", hits / total)
+        sat_url = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lng}&zoom=19&size=600x600&maptype=satellite&key={API_KEY}"
+
+        try:
+            response = requests.get(sat_url)
+            sat_img = Image.open(BytesIO(response.content))
+
+            left = (sat_img.width - SAT_IMG_OUT_SIZE) / 2
+            top = (sat_img.height - SAT_IMG_OUT_SIZE) / 2
+            right = (sat_img.width + SAT_IMG_OUT_SIZE) / 2
+            bottom = (sat_img.height + SAT_IMG_OUT_SIZE) / 2
+
+            sat_img_cropped = sat_img.crop((left, top, right, bottom))
+        except:
+            continue      
+
+        street_img_cropped.save(street_out_path)
+        sat_img_cropped.save(sat_out_path)
