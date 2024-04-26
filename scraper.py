@@ -57,6 +57,8 @@ for i in range(MAX_QUERIES):
     except:
         img_json_text = driver.find_element(by="tag name", value="body").text
         img_data = json.loads(img_json_text)
+        if "location" not in img_data:
+            continue
         lat, lng = img_data["location"]["lat"], img_data["location"]["lng"]
         loc = f'{lat},{lng}'
 
@@ -98,6 +100,6 @@ for i in range(MAX_QUERIES):
             sat_img_cropped = sat_img.crop((left, top, right, bottom))
         except:
             continue     
-        
+
         street_img_cropped.save(street_out_path)
         sat_img_cropped.save(sat_out_path)
