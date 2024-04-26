@@ -9,8 +9,6 @@ from PIL import Image
 from io import BytesIO
 from dotenv import load_dotenv
 import os
-import geopandas as gpd
-from shapely.geometry import Point
 
 IMG_SIZE = 400
 STRT_IMG_OUT_SIZE = 256
@@ -26,12 +24,6 @@ NUM_IMAGES = 1000
 MAX_QUERIES = 10000
 RADIUS = 25000
 
-
-# gdf = gpd.read_file('assets/cb_2018_us_state_500k.shp')
-
-# def is_point_in_us_mainland(lat, lng):
-#     point = Point(lng, lat)
-#     return any(gdf.contains(point))
 
 def generate_random_us_coordinates():
     while True:
