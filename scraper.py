@@ -20,8 +20,8 @@ load_dotenv()
 API_KEY = os.getenv('API_KEY')
 
 # number of images to be obtained
-NUM_IMAGES = 1000
-MAX_QUERIES = 10000
+NUM_IMAGES = 10000
+MAX_QUERIES = 100000
 RADIUS = 25000
 
 
@@ -97,7 +97,7 @@ for i in range(MAX_QUERIES):
 
             sat_img_cropped = sat_img.crop((left, top, right, bottom))
         except:
-            continue      
-
+            continue     
+        
         street_img_cropped.save(street_out_path)
         sat_img_cropped.save(sat_out_path)
