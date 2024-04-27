@@ -9,6 +9,7 @@ from PIL import Image
 from io import BytesIO
 from dotenv import load_dotenv
 import os
+import data_cleaner
 
 IMG_SIZE = 400
 STRT_IMG_OUT_SIZE = 256
@@ -29,8 +30,8 @@ def generate_random_us_coordinates():
     while True:
         latitude = np.random.uniform(24.5, 49.0)
         longitude = np.random.uniform(-125.0, -67.0)
-        # if is_point_in_us_mainland(latitude, longitude):
-        #     print("hit")
+        if data_cleaner.is_point_in_us_mainland(latitude, longitude):
+            continue
         return latitude, longitude
 
 chrome_options = webdriver.ChromeOptions()
