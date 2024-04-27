@@ -32,6 +32,6 @@ m.drawcountries()
 
 x, y = m(longitudes, latitudes)
 
-m.scatter(x, y, color='red', marker='o', s=3) 
+m.scatter(x, y, color='red', marker='o', s=0.1) 
 
 plt.show()

@@ -25,7 +25,7 @@ def remove_non_mainland_image_pairs(street_dir, satellite_dir):
                 os.remove(street_image_path)
                 os.remove(satellite_image_path)
 
-if __name__ == 'main':
+if __name__ == "__main__":
     street_dir = 'data/street'
     satellite_dir = 'data/satellite'
 
