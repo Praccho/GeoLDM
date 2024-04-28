@@ -28,7 +28,7 @@ class DiagonalGaussianDistribution():
 
 
 class VAE(pl.LightningModule):
-    def __init__(self, ddconfig, lossconfig, emb_dim, ckpt_path=None):
+    def __init__(self, ddconfig, lossconfig, emb_dim, ckpt_path=None, monitor=None):
         super().__init__()
         self.encoder = VAE_Encoder(**ddconfig)
         self.decoder = VAE_Decoder(**ddconfig)
@@ -113,3 +113,31 @@ class VAE(pl.LightningModule):
     
     def get_last_layer(self):
         return self.decoder.conv_out.weight
+    
+    @torch.no_grad()
+    def log_images(self, batch, only_inputs=False, **kwargs):
+        log = dict()
+        x = self.get_input(batch, self.image_key)
+        x = x.to(self.device)
+        if not only_inputs:
+            xrec, posterior = self(x)
+            if x.shape[1] > 3:
+                # colorize with random projection
+                assert xrec.shape[1] > 3
+                x = self.to_rgb(x)
+                xrec = self.to_rgb(xrec)
+            log["samples"] = self.decode(torch.randn_like(posterior.sample()))
+            log["reconstructions"] = xrec
+        log["inputs"] = x
+        return log
+    
+    def configure_optimizers(self):
+        lr = self.learning_rate
+        opt_ae = torch.optim.Adam(list(self.encoder.parameters())+
+                                  list(self.decoder.parameters())+
+                                  list(self.emb_conv.parameters())+
+                                  list(self.post_emb_conv.parameters()),
+                                  lr=lr, betas=(0.5, 0.9))
+        opt_disc = torch.optim.Adam(self.loss.discriminator.parameters(),
+                                    lr=lr, betas=(0.5, 0.9))
+        return [opt_ae, opt_disc], []

@@ -2,6 +2,7 @@ model:
   base_learning_rate: 4.5e-06
   target: ldm.models.autoencoder.VAE
   params:
+    monitor: "val/rec_loss"
     emb_dim: 16
     lossconfig:
       target: ldm.modules.losses.LPIPSWithDiscriminator
