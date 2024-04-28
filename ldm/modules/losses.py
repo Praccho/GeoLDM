@@ -1,3 +1,5 @@
+# from https://github.com/CompVis/latent-diffusion
+
 import torch
 import torch.nn as nn
 
