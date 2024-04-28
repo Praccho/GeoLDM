@@ -2,6 +2,7 @@ import geopandas as gpd
 from shapely.geometry import Point
 import os
 from PIL import Image
+from tqdm import tqdm
 
 gdf = gpd.read_file('assets/cb_2018_us_state_500k.shp')
 
@@ -11,7 +12,7 @@ def is_point_in_us_mainland(lat, lng):
     return any(gdf.contains(point))
 
 def remove_non_mainland_image_pairs(street_dir, satellite_dir):
-    for filename in os.listdir(street_dir):
+    for filename in tqdm(os.listdir(street_dir)):
         if not filename.endswith(".png") or filename.startswith('.'):
             continue
 
@@ -34,7 +35,7 @@ def remove_missing(street_dir, satellite_dir):
         if filename.endswith("png"):
             bad_images.append(list(Image.open(os.path.join(bad_sample_dir, filename)).getdata()))
     
-    for filename in os.listdir(street_dir):
+    for filename in tqdm(os.listdir(street_dir)):
         if not filename.endswith(".png") or filename.startswith('.'):
             continue
 
@@ -53,8 +54,8 @@ def remove_missing(street_dir, satellite_dir):
                 os.remove(satellite_image_path)
 
 if __name__ == "__main__":
-    street_dir = 'data/street'
-    satellite_dir = 'data/satellite'
+    street_dir = 'data/val/street'
+    satellite_dir = 'data/val/satellite'
 
     # remove_non_mainland_image_pairs(street_dir, satellite_dir)
     remove_missing(street_dir, satellite_dir)

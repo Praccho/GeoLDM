@@ -32,7 +32,7 @@ class StreetSatBase(Dataset):
     def __getitem__(self, idx):
         street_img_name = os.path.join(self.street_dir, self.image_files[idx])
         lat_lng = self.image_files[idx].split('_')[0]
-        satellite_img_name = os.path.join(self.satellite_dir, f'{lat_lng}_satellite.png')
+        satellite_img_name = os.path.join(self.satellite_dir, f'{lat_lng}_sat.png')
 
         street_img = Image.open(street_img_name)
         satellite_img = Image.open(satellite_img_name)
@@ -51,7 +51,7 @@ class StreetSatBase(Dataset):
 
         street_img = np.array(street_img).astype(np.uint8)
         street_img = (street_img / 127.5 - 1.0).astype(np.float32)
-        
+
         satellite_img = np.array(satellite_img).astype(np.uint8)
         satellite_img = (satellite_img / 127.5 - 1.0).astype(np.float32)
 

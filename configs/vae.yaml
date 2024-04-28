@@ -18,7 +18,7 @@ model:
       ch: 64
       ch_mult: [1,2,4]
       num_res_blocks: 2
-      attn_resolutions: [8]
+      attn_resolutions: [16]
 data:
   target: main.StreetSatDataModule
   params:
@@ -37,7 +37,7 @@ lightning:
     image_logger:
       target: main.ImageLogger
       params:
-        batch_frequency: 1000
+        batch_frequency: 1
         max_images: 8
         increase_log_steps: True
 

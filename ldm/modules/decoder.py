@@ -64,7 +64,7 @@ class VAE_Decoder(nn.Module):
         h = self.mid.attn_1(h)
         h = self.mid.block_2(h)
 
-        for lvl in range(self.num_resolutions):
+        for lvl in reversed(range(self.num_resolutions)):
             for i_block in range(self.num_res_blocks):
                 h = self.up[lvl].res_block[i_block](h)
                 if len(self.up[lvl].attn) > 0:
@@ -75,3 +75,5 @@ class VAE_Decoder(nn.Module):
         h = self.norm_out(h)
         h = F.silu(h)
         h = self.conv_out(h)
+
+        return h

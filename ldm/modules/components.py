@@ -26,7 +26,7 @@ class AttnBlock(nn.Module):
 
         q = self.q0(r)
         k = self.k0(r)
-        v = self.k0(r)
+        v = self.v0(r)
 
         b, c, h, w = x.shape
         
@@ -35,13 +35,15 @@ class AttnBlock(nn.Module):
         q = q.reshape(b, c, h * w)
         q = q.permute(0,2,1)
         k = k.reshape(b, c, h * w)
+        v = v.reshape(b,c, h * w)
+        
 
-        w = F.softmax(torch.bmm(q, k) ** (int(c) ** -0.5), dim=-1)
-        w = w.permute(0,2,1)
+        wts = F.softmax(torch.bmm(q, k) * (int(c) ** -0.5), dim=-1)
+        wts = wts.permute(0,2,1)
 
         # NOTE: we do V @ W = (W @ V).T here because we want to tpose 
         # back to [c, h*w] after
-        r = torch.bmm(v, w)
+        r = torch.bmm(v, wts)
         r = r.reshape(b,c,h,w)
         
         r = self.proj(r)
@@ -62,7 +64,7 @@ class ResBlock(nn.Module):
         self.conv_2 = nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1)
 
         if self.in_ch != self.out_ch:
-            self.shortcut = nn.Conv2d(self.in_ch, self.out_ch, kernel_size=1, padding=1)
+            self.shortcut = nn.Conv2d(self.in_ch, self.out_ch, kernel_size=1, padding=0)
     
     def forward(self, x):
         r = x

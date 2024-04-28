@@ -34,7 +34,7 @@ class VAE(pl.LightningModule):
         self.decoder = VAE_Decoder(**ddconfig)
         self.loss = instantiate_from_config(lossconfig)
         self.emb_conv = nn.Conv2d(2*ddconfig["z_channels"], 2*emb_dim, kernel_size=1)
-        self.post_emb_conv = nn.Conv2d(2*emb_dim, 2*ddconfig["z_channels"], kernel_size=1)
+        self.post_emb_conv = nn.Conv2d(emb_dim, ddconfig["z_channels"], kernel_size=1)
         self.emb_dim = emb_dim
         
         if ckpt_path is not None:
@@ -58,7 +58,7 @@ class VAE(pl.LightningModule):
         return posterior
     
     def decode(self, z):
-        z = self.post_emb_conv()
+        z = self.post_emb_conv(z)
         dec = self.decoder(z)
         return dec
 
@@ -77,7 +77,7 @@ class VAE(pl.LightningModule):
 
     
     def training_step(self, batch, batch_idx, optimizer_idx):
-        inputs = self.get_input(batch, self.image_key)
+        inputs = self.get_input(batch)
         rec, post = self(inputs)
 
         if optimizer_idx == 0:
@@ -98,7 +98,7 @@ class VAE(pl.LightningModule):
             return discloss
         
     def validation_step(self, batch, batch_idx):
-        inputs = self.get_input(batch, self.image_key)
+        inputs = self.get_input(batch)
         reconstructions, posterior = self(inputs)
         aeloss, log_dict_ae = self.loss(inputs, reconstructions, posterior, 0, self.global_step,
                                         last_layer=self.get_last_layer(), split="val")
@@ -117,7 +117,7 @@ class VAE(pl.LightningModule):
     @torch.no_grad()
     def log_images(self, batch, only_inputs=False, **kwargs):
         log = dict()
-        x = self.get_input(batch, self.image_key)
+        x = self.get_input(batch)
         x = x.to(self.device)
         if not only_inputs:
             xrec, posterior = self(x)
