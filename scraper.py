@@ -69,8 +69,8 @@ if __name__ == "__main__":
             api_request = f'{API_ENDPOINT}?size={IMG_SIZE}x{IMG_SIZE}&location={loc}&fov=80&heading={rand_heading}&pitch=0&key={API_KEY}'
             driver.get(api_request)
             
-            street_out_path = f'data/street/{loc}_street.png'
-            sat_out_path = f'data/satellite/{loc}_sat.png'
+            street_out_path = f'data/train/street/{loc}_street.png'
+            sat_out_path = f'data/train/satellite/{loc}_sat.png'
 
             if os.path.exists(street_out_path):
                 continue
