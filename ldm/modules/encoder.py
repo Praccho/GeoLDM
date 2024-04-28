@@ -4,7 +4,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from components import ResBlock, AttnBlock, Downsample
+from ldm.modules.components import ResBlock, AttnBlock, Downsample
 
 class VAE_Encoder(nn.Module):
     def __init__(self, *, ch, out_ch, ch_mult=(1,2,4,8), num_res_blocks,

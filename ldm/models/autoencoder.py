@@ -5,10 +5,10 @@ import torch
 import pytorch_lightning as pl
 from torch import nn
 from torch.nn import functional as F
-from modules.encoder import VAE_Encoder
-from modules.decoder import VAE_Decoder
+from ldm.modules.encoder import VAE_Encoder
+from ldm.modules.decoder import VAE_Decoder
 
-from modules.utils import instantiate_from_config
+from ldm.modules.utils import instantiate_from_config
 
 class DiagonalGaussianDistribution():
     def __init__(self, mean_logvar):

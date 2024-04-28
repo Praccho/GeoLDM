@@ -6,6 +6,9 @@ from torch import nn
 from torch.nn import functional as F
 from einops import repeat
 import math
+
+from abc import ABCMeta, abstractmethod
+
    
 class AttnBlock(nn.Module):
     def __init__(self, in_channels):

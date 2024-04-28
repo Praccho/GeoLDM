@@ -4,7 +4,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from components import ResBlock, AttnBlock, Upsample
+from ldm.modules.components import ResBlock, AttnBlock, Upsample
 
 
 class VAE_Decoder(nn.Module):

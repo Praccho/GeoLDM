@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "cwd": "${fileDirname}",
-            "args": ["--base", "yadayada.yaml", "--train", "True"]
+            "args": ["--base", "configs/vae.yaml", "--train", "True"]
         }
     ]
 }
