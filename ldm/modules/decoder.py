@@ -40,7 +40,7 @@ class VAE_Decoder(nn.Module):
             for _ in range(num_res_blocks):
                 res_block.append(ResBlock(block_in, block_out))
                 block_in = block_out
-                if lvl in attn_resolutions:
+                if cur_res in attn_resolutions:
                     attn.append(AttnBlock(block_in))
             
             up = nn.Module()
