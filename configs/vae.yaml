@@ -26,12 +26,9 @@ data:
     train:
       target: data.datasets.StreetSatTrain
       params:
-        size: 64
     val:
       target: data.datasets.StreetSatVal
       params:
-        size: 64
-
 lightning:
   callbacks:
     image_logger:
