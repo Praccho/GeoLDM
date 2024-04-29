@@ -12,6 +12,7 @@ def is_point_in_us_mainland(lat, lng):
     return any(gdf.contains(point))
 
 def remove_non_mainland_image_pairs(street_dir, satellite_dir):
+    hits = 0
     for filename in tqdm(os.listdir(street_dir)):
         if not filename.endswith(".png") or filename.startswith('.'):
             continue
@@ -25,8 +26,11 @@ def remove_non_mainland_image_pairs(street_dir, satellite_dir):
             satellite_image_path = os.path.join(satellite_dir, f"{coords}_sat.png")
 
             if os.path.exists(street_image_path) and os.path.exists(satellite_image_path):
+                hits += 1
                 os.remove(street_image_path)
                 os.remove(satellite_image_path)
+
+    print(f"Removed {hits} non US points")
 
 def remove_missing(street_dir, satellite_dir):
     bad_sample_dir = 'data/bad_samples'
@@ -91,7 +95,7 @@ if __name__ == "__main__":
     street_dir = 'data/train/street'
     satellite_dir = 'data/train/satellite'
 
-    # remove_non_mainland_image_pairs(street_dir, satellite_dir)
+    remove_non_mainland_image_pairs(street_dir, satellite_dir)
     # remove_missing(street_dir, satellite_dir)
     # remove_mismatches(street_dir, satellite_dir)
 

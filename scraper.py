@@ -15,7 +15,7 @@ def generate_random_us_coordinates():
     while True:
         latitude = np.random.uniform(24.5, 49.0)
         longitude = np.random.uniform(-125.0, -67.0)
-        if data_cleaner.is_point_in_us_mainland(latitude, longitude):
+        if not data_cleaner.is_point_in_us_mainland(latitude, longitude):
             continue
         return latitude, longitude
 

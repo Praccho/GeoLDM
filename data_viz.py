@@ -7,7 +7,7 @@ import json
 latitudes = []
 longitudes = []
 
-for filename in os.listdir('data/street'):
+for filename in os.listdir('data/train/street'):
     if not filename.endswith("_street.png") or filename.startswith('.'):
             continue
     
