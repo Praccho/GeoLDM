@@ -3,7 +3,7 @@ model:
   target: ldm.models.autoencoder.VAE
   params:
     monitor: "val/rec_loss"
-    emb_dim: 16
+    emb_dim: 4
     lossconfig:
       target: ldm.modules.losses.LPIPSWithDiscriminator
       params:
@@ -11,18 +11,18 @@ model:
         kl_weight: 1.0e-06
         disc_weight: 0.5
     ddconfig:
-      z_channels: 16
+      z_channels: 4
       resolution: 64
       in_ch: 3
       out_ch: 3
       ch: 64
-      ch_mult: [1,2,4]
+      ch_mult: [1,2,4,4]
       num_res_blocks: 2
-      attn_resolutions: [16]
+      attn_resolutions: [8]
 data:
   target: main.StreetSatDataModule
   params:
-    batch_size: 6
+    batch_size: 8
     train:
       target: data.datasets.StreetSatTrain
       params:
