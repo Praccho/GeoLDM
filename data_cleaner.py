@@ -53,9 +53,39 @@ def remove_missing(street_dir, satellite_dir):
                 os.remove(street_image_path)
                 os.remove(satellite_image_path)
 
+def remove_mismatches(street_dir, satellite_dir):
+    
+    for filename in tqdm(os.listdir(street_dir)):
+        if not filename.endswith(".png") or filename.startswith('.'):
+            continue
+
+        base_name, _ = os.path.splitext(filename)
+        coords, _ = base_name.split('_')
+
+        street_image_path = os.path.join(street_dir, filename)
+        satellite_image_path = os.path.join(satellite_dir, f"{coords}_sat.png")
+
+        if not os.path.exists(satellite_image_path):
+            os.remove(street_image_path)
+    
+    for filename in tqdm(os.listdir(satellite_dir)):
+        if not filename.endswith(".png") or filename.startswith('.'):
+            continue
+
+        base_name, _ = os.path.splitext(filename)
+        coords, _ = base_name.split('_')
+
+        street_image_path = os.path.join(street_dir, f"{coords}_street.png")
+        satellite_image_path = os.path.join(satellite_dir, filename)
+
+        if not os.path.exists(street_image_path):
+            os.remove(satellite_image_path)
+
 if __name__ == "__main__":
-    street_dir = 'data/val/street'
-    satellite_dir = 'data/val/satellite'
+    street_dir = 'data/train/street'
+    satellite_dir = 'data/train/satellite'
 
     # remove_non_mainland_image_pairs(street_dir, satellite_dir)
-    remove_missing(street_dir, satellite_dir)
+    # remove_missing(street_dir, satellite_dir)
+    # remove_mismatches(street_dir, satellite_dir)
+
