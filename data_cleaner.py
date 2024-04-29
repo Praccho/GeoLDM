@@ -35,6 +35,8 @@ def remove_missing(street_dir, satellite_dir):
         if filename.endswith("png"):
             bad_images.append(list(Image.open(os.path.join(bad_sample_dir, filename)).getdata()))
     
+    hits = 0
+    removed = {}
     for filename in tqdm(os.listdir(street_dir)):
         if not filename.endswith(".png") or filename.startswith('.'):
             continue
@@ -52,6 +54,10 @@ def remove_missing(street_dir, satellite_dir):
             if street_image == bad_img or satellite_image == bad_img:
                 os.remove(street_image_path)
                 os.remove(satellite_image_path)
+                hits += 1
+                break
+        
+    print(f"Cleaned {hits} missing images!")
 
 def remove_mismatches(street_dir, satellite_dir):
     
@@ -82,8 +88,8 @@ def remove_mismatches(street_dir, satellite_dir):
             os.remove(satellite_image_path)
 
 if __name__ == "__main__":
-    street_dir = 'data/val/street'
-    satellite_dir = 'data/val/satellite'
+    street_dir = 'data/train/street'
+    satellite_dir = 'data/train/satellite'
 
     # remove_non_mainland_image_pairs(street_dir, satellite_dir)
     # remove_missing(street_dir, satellite_dir)
