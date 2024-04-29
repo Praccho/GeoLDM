@@ -101,6 +101,7 @@ if __name__ == "__main__":
 
                 sat_img_cropped = sat_img.crop((left, top, right, bottom))
             except:
+                print("Error on satellite load!")
                 continue     
             street_img_cropped.save(street_out_path)
             sat_img_cropped.save(sat_out_path)
