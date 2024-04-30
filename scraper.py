@@ -86,6 +86,7 @@ if __name__ == "__main__":
             
                 street_img_cropped = street_img.crop((left, top, right, bottom))
             except:
+                print(image_url)
                 continue
 
             sat_url = f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lng}&zoom=19&size=600x600&maptype=satellite&key={API_KEY}"
