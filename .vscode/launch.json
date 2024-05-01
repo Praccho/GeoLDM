@@ -12,6 +12,15 @@
             "console": "integratedTerminal",
             "cwd": "${fileDirname}",
             "args": ["--base", "configs/vae.yaml", "--train", "True"]
+        },
+        {
+            "name": "Test Scraper",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${fileDirname}",
+            "args": ["--type", "city"]
         }
     ]
 }

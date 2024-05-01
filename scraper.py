@@ -10,17 +10,51 @@ from io import BytesIO
 from dotenv import load_dotenv
 import os
 import data_cleaner
+import geopandas as gpd
+from shapely.geometry import Point
+import argparse
 
-def generate_random_us_coordinates():
+def get_parser(**parser_kwargs):
+
+    parser = argparse.ArgumentParser(**parser_kwargs)
+    parser.add_argument(
+        "--type",
+        type=str,
+        choices=['uniform', 'city'],
+        help='Type of sampling to perform',
+        required=True
+    )
+
+    return parser
+
+city_gdf = gpd.read_file('assets/USA_Major_Cities.shp')
+
+def generate_random_point_in_city(poly):
+    x, y = poly.centroid.y, poly.centroid.x
     while True:
-        latitude = np.random.uniform(24.5, 49.0)
-        longitude = np.random.uniform(-125.0, -67.0)
+        eps_x, eps_y = np.random.normal(scale=0.01), np.random.normal(scale=0.01)
+        latitude, longitude = x + eps_x, y + eps_y
+        if data_cleaner.is_point_in_us_mainland(latitude, longitude):
+            return latitude, longitude
+
+def generate_random_us_coordinates(cities = False):
+    if cities:
+        random_city = city_gdf.sample(1).iloc[0]
+        city_poly = random_city.geometry
+        return generate_random_point_in_city(city_poly)
+    
+    while True:
+        latitude, longitude = np.random.uniform(24.5, 49.0), np.random.uniform(-125.0, -67.0)
         if not data_cleaner.is_point_in_us_mainland(latitude, longitude):
             continue
         return latitude, longitude
-
-
+    
 if __name__ == "__main__":
+    parser = get_parser()
+    args = parser.parse_args()
+
+    use_cities = True if args.type == 'city' else False
+
     IMG_SIZE = 400
     STRT_IMG_OUT_SIZE = 256
     SAT_IMG_OUT_SIZE = 384
@@ -48,7 +82,7 @@ if __name__ == "__main__":
         if hits == NUM_IMAGES:
             break
 
-        rand_lat, rand_lng = generate_random_us_coordinates()
+        rand_lat, rand_lng = generate_random_us_coordinates(cities=use_cities)
         rand_loc = f'{rand_lat},{rand_lng}'
 
         metadata_request = f'{API_ENDPOINT}/metadata?&location={rand_loc}&radius={RADIUS}&key={API_KEY}'
@@ -69,8 +103,8 @@ if __name__ == "__main__":
             api_request = f'{API_ENDPOINT}?size={IMG_SIZE}x{IMG_SIZE}&location={loc}&fov=80&heading={rand_heading}&pitch=0&key={API_KEY}'
             driver.get(api_request)
             
-            street_out_path = f'data/train/street/{loc}_street.png'
-            sat_out_path = f'data/train/satellite/{loc}_sat.png'
+            street_out_path = f'data/raw/street/{loc}_street.png'
+            sat_out_path = f'data/raw/satellite/{loc}_sat.png'
 
             if os.path.exists(street_out_path):
                 continue

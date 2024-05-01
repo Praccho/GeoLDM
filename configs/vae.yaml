@@ -25,10 +25,8 @@ data:
     batch_size: 8
     train:
       target: data.datasets.StreetSatTrain
-      params:
     val:
       target: data.datasets.StreetSatVal
-      params:
 lightning:
   callbacks:
     image_logger:

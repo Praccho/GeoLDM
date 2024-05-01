@@ -6,7 +6,6 @@ from tqdm import tqdm
 
 gdf = gpd.read_file('assets/cb_2018_us_state_500k.shp')
 
-
 def is_point_in_us_mainland(lat, lng):
     point = Point(lng, lat)
     return any(gdf.contains(point))
@@ -64,7 +63,8 @@ def remove_missing(street_dir, satellite_dir):
     print(f"Cleaned {hits} missing images!")
 
 def remove_mismatches(street_dir, satellite_dir):
-    
+
+    hits = 0
     for filename in tqdm(os.listdir(street_dir)):
         if not filename.endswith(".png") or filename.startswith('.'):
             continue
@@ -76,6 +76,7 @@ def remove_mismatches(street_dir, satellite_dir):
         satellite_image_path = os.path.join(satellite_dir, f"{coords}_sat.png")
 
         if not os.path.exists(satellite_image_path):
+            hits += 1
             os.remove(street_image_path)
     
     for filename in tqdm(os.listdir(satellite_dir)):
@@ -89,13 +90,16 @@ def remove_mismatches(street_dir, satellite_dir):
         satellite_image_path = os.path.join(satellite_dir, filename)
 
         if not os.path.exists(street_image_path):
+            hits += 1
             os.remove(satellite_image_path)
+
+    print(f"Removed {hits} images without corresponding pair!")
 
 if __name__ == "__main__":
     street_dir = 'data/train/street'
     satellite_dir = 'data/train/satellite'
 
-    remove_non_mainland_image_pairs(street_dir, satellite_dir)
+    # remove_non_mainland_image_pairs(street_dir, satellite_dir)
     # remove_missing(street_dir, satellite_dir)
-    # remove_mismatches(street_dir, satellite_dir)
+    remove_mismatches(street_dir, satellite_dir)
 
