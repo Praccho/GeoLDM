@@ -44,6 +44,9 @@ class StreetSatBase(Dataset):
         right = (street_img.width + SAT_IMG_OUT_SIZE) / 2
         bottom = (street_img.height + SAT_IMG_OUT_SIZE) / 2
 
+        if self.transform:
+            satellite_img = self.transform(satellite_img)
+
         satellite_img = satellite_img.crop((left, top, right, bottom))
 
         if self.resize:
@@ -63,11 +66,11 @@ class StreetSatBase(Dataset):
 class StreetSatTrain(StreetSatBase):
     def __init__(self, **kwargs):
 
-        # transform_satellite = transforms.Compose([
-        #     transforms.RandomRotation(360),
-        # ])
+        transform_satellite = transforms.Compose([
+            transforms.RandomRotation(360),
+        ])
 
-        super().__init__(root='data/train', **kwargs)
+        super().__init__(root='data/train', transform=transform_satellite, **kwargs)
 
 class StreetSatVal(StreetSatBase):
     def __init__(self, **kwargs):
