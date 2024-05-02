@@ -36,13 +36,14 @@ class StreetSatBase(Dataset):
 
         street_img = Image.open(street_img_name)
         satellite_img = Image.open(satellite_img_name)
+        satellite_img = satellite_img.convert('RGB')
 
         # cropping satellite image
-        SAT_IMG_OUT_SIZE = 256
-        left = (street_img.width - SAT_IMG_OUT_SIZE) / 2
-        top = (street_img.height - SAT_IMG_OUT_SIZE) / 2
-        right = (street_img.width + SAT_IMG_OUT_SIZE) / 2
-        bottom = (street_img.height + SAT_IMG_OUT_SIZE) / 2
+        SAT_IMG_OUT_SIZE = 128
+        left = (satellite_img.width - SAT_IMG_OUT_SIZE) / 2
+        top = (satellite_img.height - SAT_IMG_OUT_SIZE) / 2
+        right = (satellite_img.width + SAT_IMG_OUT_SIZE) / 2
+        bottom = (satellite_img.height + SAT_IMG_OUT_SIZE) / 2
 
         if self.transform:
             satellite_img = self.transform(satellite_img)
@@ -55,7 +56,7 @@ class StreetSatBase(Dataset):
         street_img = np.array(street_img).astype(np.uint8)
         street_img = (street_img / 127.5 - 1.0).astype(np.float32)
 
-        satellite_img = np.array(satellite_img).astype(np.uint8)
+        satellite_img = np.array(satellite_img).astype(np.float32)
         satellite_img = (satellite_img / 127.5 - 1.0).astype(np.float32)
 
         sample = {'latitude': float(lat_lng.split(',')[0]), 'longitude': float(lat_lng.split(',')[1]), 
@@ -79,3 +80,8 @@ class StreetSatVal(StreetSatBase):
 class StreetSatTest(StreetSatBase):
     def __init__(self, **kwargs):
         super().__init__(root='data/test', **kwargs)
+
+if __name__ == '__main__':
+    data = StreetSatBase('data/train')
+    example = data[0]['street_image']
+    print(example.shape)

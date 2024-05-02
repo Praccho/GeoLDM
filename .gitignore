@@ -1,5 +1,5 @@
 ## Git Ignore ##
-cvae_samples/*.png
+vae_samples/*.png
 
 
 ### DEFAULTS ###

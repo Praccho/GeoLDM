@@ -21,6 +21,13 @@
             "console": "integratedTerminal",
             "cwd": "${fileDirname}",
             "args": ["--type", "city"]
+        },
+        {
+            "name": "Run CWD",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
         }
     ]
 }
