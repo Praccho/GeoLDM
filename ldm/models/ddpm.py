@@ -63,8 +63,6 @@ class LatentDiffusion(pl.LightningModule):
         if monitor is not None:
             self.monitor = monitor
 
-        #call schedule method
-
         self.register_schedule(timesteps)
 
     def register_schedule(self, timesteps):
@@ -100,7 +98,7 @@ class LatentDiffusion(pl.LightningModule):
             param.requires_grad = False
 
     def q_sample(self, x_0, t, noise):
-        
+        pass
 
     def step_loss(self, x_0, ctx, t):
         noise = torch.randn_like(x_0)
@@ -136,49 +134,6 @@ class LatentDiffusion(pl.LightningModule):
     
     def training_step(self, batch, batch_idx):
         loss, loss_dict = self.shared_step(batch)
-
-
-    #keep, but instead of overriding register_schedule for latentdiffusion, use this instead
-    def register_schedule(self, betas, timesteps):
-        to_torch = partial(torch.Tensor, dtype = torch.float32)
-        #casting/creating partial
-        alphas = 1. - betas
-        alphas_cumprod = np.cumprod(alphas, axis=0)
-        alphas_cumprod_prev = np.append(1., alphas_cumprod[:-1])
-
-
-        betas = to_torch(betas).to(self.device)
-        alphas_cumprod = to_torch(alphas_cumprod).to(self.device)
-        alphas_cumprod_prev = to_torch(alphas_cumprod_prev).to(self.device)
-    
-        #calculation for diffusion:
-        sqrt_alphas_cumprod = to_torch(np.sqrt(alphas_cumprod)).to(self.device)
-        sqrt_one_minus_alphas_cumprod = to_torch(np.sqrt(1. - alphas_cumprod)).to(self.device)
-        log_one_minus_alphas_cumprod = to_torch(np.log(1. - alphas_cumprod)).to(self.device)
-        sqrt_recip_alphas_cumprod = to_torch(np.sqrt(1. / alphas_cumprod)).to(self.device)
-        sqrt_recipm1_alphas_cumprod = to_torch(np.sqrt(1. / alphas_cumprod - 1)).to(self.device)
-
-
-        #calculation for posterior
-        posterior_variance = (1 - self.v_posterior) * betas * (1. - alphas_cumprod_prev) / (
-                        1. - alphas_cumprod) + self.v_posterior * betas
-        # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
-
-
-        posterior_variance = to_torch(posterior_variance).to(self.device)
-        # below: log calculation clipped because the posterior variance is 0 at the beginning of the diffusion chain
-    
-        posterior_log_variance_clipped = to_torch(np.log(np.maximum(posterior_variance, 1e-20))).to(self.device)
-
-
-        posterior_mean_coef1 = to_torch(betas * np.sqrt(alphas_cumprod_prev) / (1. - alphas_cumprod)).to(self.device)
-
-
-        posterior_mean_coef2 = to_torch((1. - alphas_cumprod_prev) * np.sqrt(alphas) / (1. - alphas_cumprod)).to(self.device)
-    
-        lvlb_weights = self.betas ** 2 / (2 * self.posterior_variance * to_torch(alphas) * (1 - self.alphas_cumprod))
-        lvlb_weights = to_torch(lvlb_weights).to(self.device)
-   
 
     
 def cosine_beta_schedule(timesteps, s=0.008):

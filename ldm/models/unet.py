@@ -4,12 +4,16 @@ import math
 from typing import Iterable
 
 import numpy as np
-import torch as th
+import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
+from ldm.modules.utils import SiLU,linear,ResBlock,AttentionBlock,SpatialTransformer,TimestepEmbedSequential,Downsample,Upsample,conv_nd,zero_module
 
 
 #full unet with attention and timestep
+
+#abstract out the other stuff to some util module
+
 class UNetModel(nn.Module):
     def __init__(self,
             image_size,
@@ -31,6 +35,7 @@ class UNetModel(nn.Module):
             use_scale_shift_norm=False,
             resblock_updown=False,
             use_new_attention_order=False,
+            context_dim = None,
             legacy=True,):
 
             super().__init__()
@@ -55,16 +60,15 @@ class UNetModel(nn.Module):
             self.conv_resample = conv_resample
             self.num_classes = num_classes
             self.use_checkpoint = use_checkpoint
-            self.dtype = th.float16 if use_fp16 else th.float32
+            self.dtype = torch.float16 if use_fp16 else torch.float32
             self.num_heads = num_heads
             self.num_head_channels = num_head_channels
             self.num_heads_upsample = num_heads_upsample
-            self.predict_codebook_ids = n_embed is not None
 
             time_embed_dim = model_channels * 4
             self.time_embed = nn.Sequential(
                 linear(model_channels, time_embed_dim),
-                nn.SiLU(),
+                SiLU(),
                 linear(time_embed_dim, time_embed_dim),
             )
 
@@ -74,7 +78,7 @@ class UNetModel(nn.Module):
             self.input_blocks = nn.ModuleList(
                 [
                     TimestepEmbedSequential(
-                        conv_nd(dims, in_channels, model_channels, 3, padding=1)
+                        nn.Conv3d(dims, in_channels, model_channels, 3, padding=1)
                     )
                 ]
             )
@@ -104,7 +108,7 @@ class UNetModel(nn.Module):
                             dim_head = num_head_channels
                         if legacy:
                             #num_heads = 1
-                            dim_head = ch // num_heads if use_spatial_transformer else num_head_channels
+                            dim_head = num_head_channels
                         layers.append(
                             AttentionBlock(
                                 ch,
@@ -112,8 +116,9 @@ class UNetModel(nn.Module):
                                 num_heads=num_heads,
                                 num_head_channels=dim_head,
                                 use_new_attention_order=use_new_attention_order,
-                            ) if not use_spatial_transformer else SpatialTransformer(
-                                ch, num_heads, dim_head, depth=transformer_depth, context_dim=context_dim
+                            ),
+                              SpatialTransformer(
+                                ch, num_heads, dim_head, depth=1, context_dim=context_dim
                             )
                         )
                     self.input_blocks.append(TimestepEmbedSequential(*layers))
@@ -151,7 +156,7 @@ class UNetModel(nn.Module):
                 dim_head = num_head_channels
             if legacy:
                 #num_heads = 1
-                dim_head = ch // num_heads if use_spatial_transformer else num_head_channels
+                dim_head = num_head_channels
             self.middle_block = TimestepEmbedSequential(
                 ResBlock(
                     ch,
@@ -167,10 +172,11 @@ class UNetModel(nn.Module):
                     num_heads=num_heads,
                     num_head_channels=dim_head,
                     use_new_attention_order=use_new_attention_order,
-                ) if not use_spatial_transformer else SpatialTransformer(
-                                ch, num_heads, dim_head, depth=transformer_depth, context_dim=context_dim
-                            ),
-                ResBlock(
+                ) ,
+                              SpatialTransformer(
+                                ch, num_heads, dim_head, depth=1, context_dim=context_dim
+                            )
+                ,ResBlock(
                     ch,
                     time_embed_dim,
                     dropout,
@@ -205,7 +211,7 @@ class UNetModel(nn.Module):
                             dim_head = num_head_channels
                         if legacy:
                             #num_heads = 1
-                            dim_head = ch // num_heads if use_spatial_transformer else num_head_channels
+                            dim_head = ch // num_heads 
                         layers.append(
                             AttentionBlock(
                                 ch,
@@ -213,8 +219,10 @@ class UNetModel(nn.Module):
                                 num_heads=num_heads_upsample,
                                 num_head_channels=dim_head,
                                 use_new_attention_order=use_new_attention_order,
-                            ) if not use_spatial_transformer else SpatialTransformer(
-                                ch, num_heads, dim_head, depth=transformer_depth, context_dim=context_dim
+                            ) 
+                            ,
+                              SpatialTransformer(
+                                ch, num_heads, dim_head, depth=1, context_dim=context_dim
                             )
                         )
                     if level and i == num_res_blocks:
@@ -238,14 +246,12 @@ class UNetModel(nn.Module):
                     self._feature_size += ch
 
             self.out = nn.Sequential(
-                normalization(ch),
-                nn.SiLU(),
+                GroupNorm32(32, ch),
+                SiLU(),
                 zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
             )
-            if self.predict_codebook_ids:
-                self.id_predictor = nn.Sequential(
-                normalization(ch),
-                conv_nd(dims, model_channels, n_embed, 1),
-                #nn.LogSoftmax(dim=1)  # change to cross_entropy and produce non-normalized logits
-            )
+            
 
+class GroupNorm32(nn.GroupNorm):
+    def forward(self, x):
+        return super().forward(x.float()).type(x.dtype)
