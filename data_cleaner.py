@@ -96,10 +96,10 @@ def remove_mismatches(street_dir, satellite_dir):
     print(f"Removed {hits} images without corresponding pair!")
 
 if __name__ == "__main__":
-    street_dir = 'data/train/street'
-    satellite_dir = 'data/train/satellite'
+    street_dir = 'data/raw/street'
+    satellite_dir = 'data/raw/satellite'
 
     # remove_non_mainland_image_pairs(street_dir, satellite_dir)
     # remove_missing(street_dir, satellite_dir)
-    remove_mismatches(street_dir, satellite_dir)
+    # remove_mismatches(street_dir, satellite_dir)
 

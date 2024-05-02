@@ -1,3 +1,9 @@
+## Git Ignore ##
+cvae_samples/*.png
+
+
+### DEFAULTS ###
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

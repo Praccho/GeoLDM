@@ -72,7 +72,7 @@ class VAE(pl.LightningModule):
         x = batch["street_image"]
         if len(x.shape) == 3:
             x = x[..., None]
-        x = x.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format).float()
+        x = x.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format).float().to(self.device)
         return x
 
     

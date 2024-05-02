@@ -87,7 +87,6 @@ if __name__ == "__main__":
 
         metadata_request = f'{API_ENDPOINT}/metadata?&location={rand_loc}&radius={RADIUS}&key={API_KEY}'
         driver.get(metadata_request)
-        
         try:
             text_element = driver.find_element(By.XPATH, "//*[contains(text(), 'ZERO_RESULTS')]")
         except:
@@ -108,6 +107,8 @@ if __name__ == "__main__":
 
             if os.path.exists(street_out_path):
                 continue
+
+            print(api_request)
 
             try:
                 image_url = driver.find_element(By.TAG_NAME, 'img').get_attribute('src')
