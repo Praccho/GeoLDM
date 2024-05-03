@@ -24,12 +24,10 @@ class LatentDiffusion(pl.LightningModule):
                  timesteps = 1000,
                  loss_type = "?",
                  monitor = "val/loss",
-                 use_ema = True, #what is ema
                  image_size = 8,
                  channels = 2,
                  log_every_t = 100,
                  clip_denoised = True,
-                 #not writing given betas,, adjust init and write a beta schedule function
                  original_elbo_weight = 0.,
                  v_posterior = 0.,
                  l_simple_weight=1.,
@@ -51,11 +49,6 @@ class LatentDiffusion(pl.LightningModule):
         self.log_every_t = log_every_t
         self.image_size = image_size  
         self.channels = channels
-        # self.use_ema = use_ema
-        # if self.use_ema:
-        #     self.model_ema = LitEma(self.model)
-        #     print(f"Keeping EMAs of {len(list(self.model_ema.buffers()))}.")
-
         self.v_posterior = v_posterior
         self.original_elbo_weight = original_elbo_weight
         self.l_simple_weight = l_simple_weight
@@ -91,22 +84,36 @@ class LatentDiffusion(pl.LightningModule):
         self.register_buffer('post_mean_x0_coef', to_torch(np.sqrt(alphas_cumprod_prev) * self.betas / (1. - alphas_cumprod)))
         self.register_buffer('post_mean_xt_coef', to_torch(np.sqrt(self.alphas) * (1. - alphas_cumprod_prev) / (1. - alphas_cumprod)))
 
+        lvlb_weights = self.betas ** 2 / (2 * self.post_var * to_torch(self.alphas) * (1 - self.alphas_cumprod))
+        lvlb_weights[0] = lvlb_weights[1]
+        self.register_buffer('lvlb_weights', lvlb_weights, persistent=False)
+
     def instantiate_first_stage(self, cfg):
         self.first_stage_model = instantiate_from_config(cfg)
         self.first_stage_model.train = disabled_train
         for param in self.first_stage_model.parameters():
             param.requires_grad = False
 
-    def q_sample(self, x_0, t, noise):
-        pass
+    def q_sample(self, x0, t, noise):
+        return (extract_into_tensor(self.sqrt_alphas_cumprod, t, x0.shape) * x0 +
+                extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x0.shape) * noise)
 
-    def step_loss(self, x_0, ctx, t):
-        noise = torch.randn_like(x_0)
-        x_noisy = self.q_sample(x_0, t, noise)
+    def step_loss(self, x0, ctx, t):
+        loss_dict = {}
+        pref = 'train' if self.training else 'val'
+ 
+        noise = torch.randn_like(x0)
+        xt = self.q_sample(x0, t, noise)
+        noise_pred = self.backbone(xt, ctx, t)
+        
+        loss_simple = torch.nn.functional.mse_loss(noise, noise_pred, reduction='none').mean()
+        loss_dict.update({f'{pref}/loss': loss_simple})
+        
+        return loss_simple, loss_dict
 
     def forward(self, x, ctx):
         t = torch.randint(0, self.timesteps, (x.shape[0],), device=self.device).long()
-        return self.step_loss(x, t, ctx)
+        return self.step_loss(x, ctx, t)
     
     def get_input_key(self, batch, key):
         x = batch[key]
@@ -133,7 +140,7 @@ class LatentDiffusion(pl.LightningModule):
         return loss, loss_dict
     
     def training_step(self, batch, batch_idx):
-        loss, loss_dict = self.shared_step(batch)
+        loss, loss_dict = self.shared_step(batch)   
 
     
 def cosine_beta_schedule(timesteps, s=0.008):
