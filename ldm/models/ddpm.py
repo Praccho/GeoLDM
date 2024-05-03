@@ -11,10 +11,28 @@ import numpy as np
 import pytorch_lightning as pl
 
 from ldm.modules.utils import instantiate_from_config, extract_into_tensor
+from ldm.modules.components import ResBlock,AttnBlock
 from einops import rearrange
 
 def disabled_train(self, mode=True):
     return self
+
+
+class SatelliteHead(nn.Module):
+    def __init__(self,
+        in_channels,
+        out_channels=None,
+        ):
+        super().__init__()
+        self.out_channel = out_channels if out_channels else in_channels
+        self.inblock = ResBlock(in_channels,out_channels)
+        self.outblock = AttnBlock(out_channels)
+
+    def forward(self,x):
+        x = self.inblock(x)
+        x = self.outblock(x)
+        return x
+
 
 class LatentDiffusion(pl.LightningModule):
     def __init__(self,
