@@ -36,7 +36,8 @@ class UNetModel(nn.Module):
             resblock_updown=False,
             use_new_attention_order=False,
             context_dim = None,
-            legacy=True,):
+            legacy=True,
+            ):
 
             super().__init__()
 
@@ -110,13 +111,13 @@ class UNetModel(nn.Module):
                             #num_heads = 1
                             dim_head = num_head_channels
                         layers.append(
-                            AttentionBlock(
-                                ch,
-                                use_checkpoint=use_checkpoint,
-                                num_heads=num_heads,
-                                num_head_channels=dim_head,
-                                use_new_attention_order=use_new_attention_order,
-                            ),
+                            # AttentionBlock(
+                            #     ch,
+                            #     use_checkpoint=use_checkpoint,
+                            #     num_heads=num_heads,
+                            #     num_head_channels=dim_head,
+                            #     use_new_attention_order=use_new_attention_order,
+                            # )
                               SpatialTransformer(
                                 ch, num_heads, dim_head, depth=1, context_dim=context_dim
                             )
@@ -213,14 +214,14 @@ class UNetModel(nn.Module):
                             #num_heads = 1
                             dim_head = ch // num_heads 
                         layers.append(
-                            AttentionBlock(
-                                ch,
-                                use_checkpoint=use_checkpoint,
-                                num_heads=num_heads_upsample,
-                                num_head_channels=dim_head,
-                                use_new_attention_order=use_new_attention_order,
-                            ) 
-                            ,
+                            # AttentionBlock(
+                            #     ch,
+                            #     use_checkpoint=use_checkpoint,
+                            #     num_heads=num_heads_upsample,
+                            #     num_head_channels=dim_head,
+                            #     use_new_attention_order=use_new_attention_order,
+                            # ) 
+                            # ,
                               SpatialTransformer(
                                 ch, num_heads, dim_head, depth=1, context_dim=context_dim
                             )
