@@ -67,7 +67,7 @@ if __name__ == '__main__':
         # expected input is an Aerial (0.5-2m/px high-res imagery)
         # The 0-255 pixel values should be divided by 255 so they are 0-1.
         norm_imgs = ((sat_imgs + 1) * 127.5) / 255.0
-        norm_imgs = norm_imgs.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format)
+        norm_imgs = norm_imgs.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format).to(device)
 
         feature_maps = model.feature_map(norm_imgs)
         feature_maps = feature_maps.to(torch.float16)
