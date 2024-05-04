@@ -19,7 +19,8 @@ class Satlas:
 
         # initialize Swin-v2-Base model for single images, RGB
         # fpn = feature pyramid network to combine coarse and fine grained representations
-        self.model = self.weights_manager.get_pretrained_model(model_identifier="Aerial_SwinB_SI", fpn=True, device='cpu')
+        # if on local computer, set device='cpu'
+        self.model = self.weights_manager.get_pretrained_model(model_identifier="Aerial_SwinB_SI", fpn=True)
 
     def feature_map(self, sat_img):
         # retrieving second feature map so outputted size is 16x16
@@ -36,7 +37,7 @@ if __name__ == '__main__':
     val_cfg = {'target': 'data.datasets.StreetSatVal'}
 
     # initialize destination directories
-    to_dir = f'val/sat_embeds'
+    to_dir = f'val/satemb_hydra'
     data_loader = StreetSatDataModule(128, val=val_cfg)
     data_loader.setup()
     samples = data_loader._val_dataloader()
