@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     # initialize destination directories
     to_dir = f'val/satemb_hydra'
-    data_loader = StreetSatDataModule(128, val=val_cfg)
+    data_loader = StreetSatDataModule(8, val=val_cfg, num_workers=1)
     data_loader.setup()
     samples = data_loader._val_dataloader()
     print("Initialized DataLoader")
