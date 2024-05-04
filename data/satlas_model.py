@@ -13,14 +13,14 @@ sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 from main import StreetSatDataModule
 
 class Satlas:
-    def __init__(self):
+    def __init__(self, device):
         # initialize a Weights instance
         self.weights_manager = satlaspretrain_models.Weights()
 
         # initialize Swin-v2-Base model for single images, RGB
         # fpn = feature pyramid network to combine coarse and fine grained representations
         # if on local computer, set device='cpu'
-        self.model = self.weights_manager.get_pretrained_model(model_identifier="Aerial_SwinB_SI", fpn=True)
+        self.model = self.weights_manager.get_pretrained_model(model_identifier="Aerial_SwinB_SI", fpn=True).to(device)
 
     def feature_map(self, sat_img):
         # retrieving second feature map so outputted size is 16x16
@@ -30,7 +30,7 @@ class Satlas:
 if __name__ == '__main__':
     device = torch.device('cuda')
     # initialize model
-    model = Satlas().to(device)
+    model = Satlas(device)
     print("Initialized Model")
 
     train_cfg = {'target': 'data.datasets.StreetSatTrain'}
