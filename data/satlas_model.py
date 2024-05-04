@@ -28,8 +28,9 @@ class Satlas:
     
 
 if __name__ == '__main__':
+    device = torch.device('cuda')
     # initialize model
-    model = Satlas()
+    model = Satlas().to(device)
     print("Initialized Model")
 
     train_cfg = {'target': 'data.datasets.StreetSatTrain'}
