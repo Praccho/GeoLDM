@@ -37,7 +37,7 @@ if __name__ == '__main__':
     val_cfg = {'target': 'data.datasets.StreetSatVal'}
 
     to_dir = 'data/val/satemb_hydra'
-    data_loader = StreetSatDataModule(8, val=val_cfg, train=train_cfg, num_workers=1)
+    data_loader = StreetSatDataModule(8, val=val_cfg, train=train_cfg, num_workers=3)
     data_loader.setup()
     samples = data_loader._val_dataloader()
     print("Initialized DataLoader")
