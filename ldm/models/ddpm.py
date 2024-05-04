@@ -11,28 +11,10 @@ import numpy as np
 import pytorch_lightning as pl
 
 from ldm.modules.utils import instantiate_from_config, extract_into_tensor
-from ldm.modules.components import ResBlock,AttnBlock
 from einops import rearrange
 
 def disabled_train(self, mode=True):
     return self
-
-
-class SatelliteHead(nn.Module):
-    def __init__(self,
-        in_channels,
-        out_channels=None,
-        ):
-        super().__init__()
-        self.out_channel = out_channels if out_channels else in_channels
-        self.inblock = ResBlock(in_channels,out_channels)
-        self.outblock = AttnBlock(out_channels)
-
-    def forward(self,x):
-        x = self.inblock(x)
-        x = self.outblock(x)
-        return x
-
 
 class LatentDiffusion(pl.LightningModule):
     def __init__(self,
@@ -40,22 +22,12 @@ class LatentDiffusion(pl.LightningModule):
                  cond_stage_config,
                  backbone_config,
                  timesteps = 1000,
-                 loss_type = "?",
                  monitor = "val/loss",
-                 image_size = 8,
+                 embed_size = 8,
                  channels = 2,
                  log_every_t = 100,
                  clip_denoised = True,
-                 original_elbo_weight = 0.,
-                 v_posterior = 0.,
-                 l_simple_weight=1.,
-                 learn_logvar=False,
-                 logvar_init=0.,
-                 betas = None,
-                 alphas = None,
-                 device = None,
                  scale_factor = 0.18215, # the holy number
-                 scale_by_std = False,
             ):
         super().__init__()
         self.instantiate_first_stage(first_stage_config)
@@ -65,11 +37,9 @@ class LatentDiffusion(pl.LightningModule):
         self.timesteps = timesteps
         self.clip_denoised = clip_denoised
         self.log_every_t = log_every_t
-        self.image_size = image_size  
+        self.embed_size = embed_size
         self.channels = channels
-        self.v_posterior = v_posterior
-        self.original_elbo_weight = original_elbo_weight
-        self.l_simple_weight = l_simple_weight
+        self.scale_factor = scale_factor
 
         if monitor is not None:
             self.monitor = monitor
@@ -122,7 +92,7 @@ class LatentDiffusion(pl.LightningModule):
  
         noise = torch.randn_like(x0)
         xt = self.q_sample(x0, t, noise)
-        noise_pred = self.backbone(xt, ctx, t)
+        noise_pred = self.backbone(xt, t, ctx)
         
         loss_simple = torch.nn.functional.mse_loss(noise, noise_pred, reduction='none').mean()
         loss_dict.update({f'{pref}/loss': loss_simple})
@@ -131,6 +101,7 @@ class LatentDiffusion(pl.LightningModule):
 
     def forward(self, x, ctx):
         t = torch.randint(0, self.timesteps, (x.shape[0],), device=self.device).long()
+        ctx = self.cond_stage_model(ctx)
         return self.step_loss(x, ctx, t)
     
     def get_input_key(self, batch, key):
@@ -145,12 +116,13 @@ class LatentDiffusion(pl.LightningModule):
     def get_input(self, batch):
         x = self.get_input_key("street_image")
         z_posterior = self.first_stage_model(x)
-        z = z_posterior.sample().detach()
+        z = z_posterior.sample()
+        z = self.scale_factor * z
+        z = z.detach()
 
         ctx = self.get_input_key(batch, "satellite_emb")
-        ctx = self.cond_stage_model(ctx)
 
-        return x, ctx
+        return z, ctx
 
     def shared_step(self, batch):
         x, ctx = self.get_input(batch)
@@ -159,6 +131,14 @@ class LatentDiffusion(pl.LightningModule):
     
     def training_step(self, batch, batch_idx):
         loss, loss_dict = self.shared_step(batch)   
+
+        self.log_dict(loss_dict, prog_bar=True,
+                      logger=True, on_step=True, on_epoch=True)
+        
+        self.log("global_step", self.global_step,
+                 prog_bar=True, logger=True, on_step=True, on_epoch=False)
+        
+        return loss
 
     
 def cosine_beta_schedule(timesteps, s=0.008):
