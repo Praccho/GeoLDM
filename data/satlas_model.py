@@ -24,7 +24,7 @@ class Satlas:
 
     def feature_map(self, sat_img):
         # retrieving second feature map so outputted size is 16x16
-        return self.model(sat_img)[1]
+        return self.model(sat_img)[2]
     
 
 if __name__ == '__main__':
@@ -36,9 +36,8 @@ if __name__ == '__main__':
     test_cfg = {'target': 'data.datasets.StreetSatTest'}
     val_cfg = {'target': 'data.datasets.StreetSatVal'}
 
-    # initialize destination directories
-    to_dir = f'val/satemb_hydra'
-    data_loader = StreetSatDataModule(8, val=val_cfg, num_workers=1)
+    to_dir = '/content/GeoLDM/data/val/satemb_hydra'
+    data_loader = StreetSatDataModule(8, val=val_cfg, train=train_cfg, num_workers=1)
     data_loader.setup()
     samples = data_loader._val_dataloader()
     print("Initialized DataLoader")
@@ -46,18 +45,20 @@ if __name__ == '__main__':
     # load data from dataloader
     for batch in tqdm(samples):
         lats, lngs, sat_imgs = batch['latitude'], batch['longitude'], batch['satellite_image']
-        mask = torch.ones(len(lats)).long()
+        inds = []
         outpaths = []
         for i, (lat, lng) in enumerate(zip(lats, lngs)):
-            filename = f"{lat},{lng}_satemb.png"
+            filename = f"{lat},{lng}_satemb.pt"
             outpath = os.path.join(to_dir, filename)
+
             if os.path.exists(outpath):
-                mask[i] = 0
                 continue
+
+            inds.append(i)
             outpaths.append(outpath)
-            
-        
-        sat_imgs = sat_imgs[mask]
+
+        inds = torch.tensor(inds).int()
+        sat_imgs = torch.index_select(sat_imgs, 0, inds)
 
         if len(sat_imgs) == 0:
             continue
@@ -65,7 +66,10 @@ if __name__ == '__main__':
         # expected input is an Aerial (0.5-2m/px high-res imagery)
         # The 0-255 pixel values should be divided by 255 so they are 0-1.
         norm_imgs = ((sat_imgs + 1) * 127.5) / 255.0
+        norm_imgs = norm_imgs.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format)
+
         feature_maps = model.feature_map(norm_imgs)
+        feature_maps = feature_maps.to(torch.float16)
 
         for outpath, feature_map in zip(outpaths, feature_maps):
-            feature_map.save(outpath)
+            torch.save(feature_map.clone(), outpath)
