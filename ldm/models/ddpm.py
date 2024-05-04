@@ -11,7 +11,7 @@ import numpy as np
 import pytorch_lightning as pl
 
 from ldm.modules.utils import instantiate_from_config, extract_into_tensor
-from einops import rearrange
+from einops import rearrange, repeat
 
 def disabled_train(self, mode=True):
     return self
@@ -28,6 +28,7 @@ class LatentDiffusion(pl.LightningModule):
                  log_every_t = 100,
                  clip_denoised = True,
                  scale_factor = 0.18215, # the holy number
+                 p_uncond = 0.
             ):
         super().__init__()
         self.instantiate_first_stage(first_stage_config)
@@ -40,6 +41,7 @@ class LatentDiffusion(pl.LightningModule):
         self.embed_size = embed_size
         self.channels = channels
         self.scale_factor = scale_factor
+        self.p_uncond = p_uncond
 
         if monitor is not None:
             self.monitor = monitor
@@ -47,16 +49,19 @@ class LatentDiffusion(pl.LightningModule):
         self.register_schedule(timesteps)
 
     def register_schedule(self, timesteps):
-        self.betas = cosine_beta_schedule(timesteps)
-        self.alphas = 1.-self.betas
+        betas = cosine_beta_schedule(timesteps).numpy()
+        alphas = 1.-betas
+
+        to_torch = partial(torch.tensor, dtype=torch.float32)
+
+        self.register_buffer('betas', to_torch(betas))
+        self.register_buffer('alphas', to_torch(alphas))
 
         alphas_cumprod = torch.cumprod(self.alphas, dim=0)
         alphas_cumprod_prev = torch.cat((torch.ones(1, dtype=torch.float64), alphas_cumprod[:-1]))
 
         post_var = self.betas * (1. - alphas_cumprod_prev) / (1. - alphas_cumprod)
         
-        to_torch = partial(torch.tensor, dtype=torch.float32)
-
         self.register_buffer('betas', to_torch(self.betas))
         self.register_buffer('alphas_cumprod', to_torch(alphas_cumprod))
         self.register_buffer('alphas_cumprod_prev', to_torch(alphas_cumprod_prev))
@@ -101,7 +106,7 @@ class LatentDiffusion(pl.LightningModule):
 
     def forward(self, x, ctx):
         t = torch.randint(0, self.timesteps, (x.shape[0],), device=self.device).long()
-        ctx = self.cond_stage_model(ctx)
+        ctx = self.cond_stage_model(ctx) if ctx else None
         return self.step_loss(x, ctx, t)
     
     def get_input_key(self, batch, key):
@@ -113,16 +118,31 @@ class LatentDiffusion(pl.LightningModule):
 
         return x
 
-    def get_input(self, batch):
-        x = self.get_input_key("street_image")
-        z_posterior = self.first_stage_model(x)
+    @torch.no_grad()
+    def get_input(self, batch, return_first_stage_outputs=True, return_original_cond=True, bs=None):
+        bs = bs if bs else len(batch)
+        x = self.get_input_key(batch, "street_image")[:bs]
+        z_posterior = self.first_stage_model.encode(x)
         z = z_posterior.sample()
         z = self.scale_factor * z
         z = z.detach()
 
-        ctx = self.get_input_key(batch, "satellite_emb")
+        ctx = self.get_input_key(batch, "satellite_emb")[:bs]
 
-        return z, ctx
+        if self.training:
+            mask = torch.rand(ctx.size(0)) < self.p_uncond
+            ctx[mask] = 0
+
+        ret = [z, ctx]
+
+        if return_first_stage_outputs:
+            xrec = self.first_stage_model.decode(z)
+            ret.extend([x, xrec])
+        if return_original_cond:
+            xc = self.get_input_key(batch, "satellite_image")[:bs]
+            ret.append(xc)
+
+        return ret
 
     def shared_step(self, batch):
         x, ctx = self.get_input(batch)
@@ -139,6 +159,44 @@ class LatentDiffusion(pl.LightningModule):
                  prog_bar=True, logger=True, on_step=True, on_epoch=False)
         
         return loss
+
+    @torch.no_grad()
+    def validation_step(self, batch, batch_idx):
+        _, loss_dict = self.shared_step(batch)
+        self.log_dict(loss_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
+
+    @torch.no_grad()
+    def log_images(self, batch, N=8, n_row=4, sample=True, ddim_steps=200, ddim_eta=1., return_keys=None,
+                   quantize_denoised=True, inpaint=True, plot_denoise_rows=False, plot_progressive_rows=True,
+                   plot_diffusion_rows=True, **kwargs):
+
+        use_ddim = ddim_steps is not None
+
+        log = dict()
+        z, c, x, xrec, xc = self.get_input(batch,
+                                           return_first_stage_outputs=True,
+                                           force_c_encode=True,
+                                           return_original_cond=True,
+                                           bs=N)
+        N = min(x.shape[0], N)
+        n_row = min(x.shape[0], n_row)
+        log["inputs"] = x
+        log["reconstruction"] = xrec
+        log["original_conditioning"] = xc
+
+        if sample:
+            samples, z_denoise_row = self.sample(cond=c, batch_size=N)
+            x_samples = self.decode_first_stage(samples)
+            log["samples"] = x_samples
+
+        return log
+    
+    def configure_optimizers(self):
+        lr = self.learning_rate
+        params = list(self.backbone.parameters()) + list(self.cond_stage_model.parameters())
+        opt = torch.optim.AdamW(params, lr=lr)
+
+        return opt
 
     
 def cosine_beta_schedule(timesteps, s=0.008):
