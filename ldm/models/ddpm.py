@@ -10,28 +10,29 @@ import numpy as np
 
 import pytorch_lightning as pl
 
-from ldm.modules.utils import instantiate_from_config, extract_into_tensor
+from ldm.modules.utils import instantiate_from_config, extract_into_tensor, disabled_train
 from ldm.modules.components import ResBlock, AttnBlock
 from einops import rearrange, repeat
 from tqdm import tqdm
 
-def disabled_train(self, mode=True):
-    return self
-
 class SatelliteHead(nn.Module):
-    def __init__(self,
-        in_channels,
-        out_channels=None,
-        ):
+    def __init__(self, in_channels, out_channels=None):
         super().__init__()
-        self.out_channel = out_channels if out_channels else in_channels
-        self.inblock = ResBlock(in_channels,out_channels)
-        self.outblock = AttnBlock(out_channels)
+        self.in_channels = in_channels
+        self.out_channels = out_channels if out_channels else in_channels
+        self.inblock = ResBlock(self.in_channels, self.out_channels)
+        self.outblock = AttnBlock(self.out_channels)
 
-    def forward(self,x):
-        x = self.inblock(x)
-        x = self.outblock(x)
-        return x
+    def forward(self, sat_emb, lat_emb, lng_emb):
+        bs, c, h, w = sat_emb.shape
+
+        se = self.inblock(se)
+        se = self.outblock(se)
+        se = se.reshape(bs, c, h * w)
+        se = torch.cat([se, lat_emb, lng_emb], dim=1)
+        se = se.permute(0,2,1)
+
+        return se
     
 class LatentDiffusion(pl.LightningModule):
     def __init__(self,
@@ -124,11 +125,12 @@ class LatentDiffusion(pl.LightningModule):
             extract_into_tensor(self.post_mean_x0_coef, t, x.shape) * x_rec +
             extract_into_tensor(self.post_mean_xt_coef, t, x.shape) * x
         )
-        post_var = extract_into_tensor(self.post_var, t, x.shape)
         post_log_var = extract_into_tensor(self.post_log_var, t, x.shape) 
 
-        return mean, poster_Var , post_log_var
+        noise = torch.randn(x.shape, device=self.device)
+        mask = (1 - (t == 0).float()).reshape(x.shape[0], *((1,) * (len(x.shape) - 1)))
 
+        return mean + mask * (0.5 * post_log_var).exp() * noise
 
     def step_loss(self, x0, ctx, t):
         loss_dict = {}
@@ -145,7 +147,6 @@ class LatentDiffusion(pl.LightningModule):
 
     def forward(self, x, ctx):
         t = torch.randint(0, self.timesteps, (x.shape[0],), device=self.device).long()
-        ctx = self.cond_stage_model(ctx) if ctx else None
         return self.step_loss(x, ctx, t)
     
     def get_input_key(self, batch, key):
@@ -166,11 +167,17 @@ class LatentDiffusion(pl.LightningModule):
         z = self.scale_factor * z
         z = z.detach()
 
-        ctx = self.get_input_key(batch, "satellite_emb")[:bs]
+        sat_emb = batch["satellite_emb"][:bs].to(self.device)
+        lat_emb = batch["lat_emb"][:bs].to(self.device)
+        lng_emb = batch["lng_emb"][:bs].to(self.device)
 
         if self.training:
-            mask = torch.rand(ctx.size(0)) < self.p_uncond
-            ctx[mask] = 0
+            mask = torch.rand(len(batch)) < self.p_uncond
+            sat_emb[mask] = 0
+            lat_emb[mask] = 0
+            lng_emb[mask] = 0
+
+        ctx = self.cond_stage_model(sat_emb, lat_emb, lng_emb)
 
         ret = [z, ctx]
 
@@ -181,7 +188,7 @@ class LatentDiffusion(pl.LightningModule):
             xc = self.get_input_key(batch, "satellite_image")[:bs]
             ret.append(xc)
 
-        return ret
+        return ret, ctx
 
     def shared_step(self, batch):
         x, ctx = self.get_input(batch)

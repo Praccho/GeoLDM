@@ -44,7 +44,7 @@ class StreetSatBase(Dataset):
         satellite_img = Image.open(satellite_img_name)
         satellite_img = satellite_img.convert('RGB')
 
-        satellite_emb = torch.load(satellite_emb_name)
+        satellite_emb = torch.load(satellite_emb_name).detach()
         lat_emb, lng_emb = self.pos_enc(lat, lng)
 
         # cropping satellite image
@@ -68,7 +68,7 @@ class StreetSatBase(Dataset):
         satellite_img = np.array(satellite_img).astype(np.float32)
         satellite_img = (satellite_img / 127.5 - 1.0).astype(np.float32)
 
-        sample = {'latitude': lat_emb, 'longitude': lng_emb, 
+        sample = {#'lat_emb': lat_emb, 'lng_emb': lng_emb, 
                   'street_image': street_img, 'satellite_image': satellite_img, 'satellite_emb': satellite_emb}
 
         return sample

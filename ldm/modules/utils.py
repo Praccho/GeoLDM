@@ -150,6 +150,8 @@ def init_(tensor):
     tensor.uniform_(-std, std)
     return tensor
 
+def disabled_train(self, mode=True):
+    return self
 
 # feedforward
 class GEGLU(nn.Module):

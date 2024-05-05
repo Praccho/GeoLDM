@@ -43,7 +43,9 @@ model:
             attn_resolutions: [8]
           ckpt_path: checkpoints/vae/8x8x2_64ch_vae.ckpt
       cond_stage_config:
-        target: torch.nn.Identity
+        target: ldm.models.ddpm.SatelliteHead
+        params:
+          in_channels: 128
 
 data:
   target: main.StreetSatDataModule

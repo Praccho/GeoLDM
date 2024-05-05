@@ -54,7 +54,7 @@ class ResBlock(nn.Module):
     def __init__(self, in_ch, out_ch=None):
         super().__init__()
         self.in_ch = in_ch
-        out_ch = out_ch if out_ch else None
+        out_ch = out_ch if out_ch else in_ch
         self.out_ch = out_ch
         
         self.groupnorm_1 = nn.GroupNorm(num_groups=32, num_channels=in_ch, eps=1e-6, affine=True)
