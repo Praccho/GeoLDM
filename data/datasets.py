@@ -63,10 +63,10 @@ class StreetSatBase(Dataset):
             street_img = self.resize(street_img)
 
         street_img = np.array(street_img).astype(np.uint8)
-        street_img = (street_img / 127.5 - 1.0).astype(np.float32)
+        street_img = (street_img / 127.5 - 1.0).astype(np.float16)
 
-        satellite_img = np.array(satellite_img).astype(np.float32)
-        satellite_img = (satellite_img / 127.5 - 1.0).astype(np.float32)
+        satellite_img = np.array(satellite_img).astype(np.float16)
+        satellite_img = (satellite_img / 127.5 - 1.0).astype(np.float16)
 
         sample = {'lat_emb': lat_emb, 'lng_emb': lng_emb, 
                   'street_image': street_img, 'satellite_image': satellite_img, 'satellite_emb': satellite_emb}
