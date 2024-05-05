@@ -10,9 +10,10 @@ import numpy as np
 
 import pytorch_lightning as pl
 
-from ldm.modules.utils import instantiate_from_config, extract_into_tensor, ResBlock, AttnBlock
-from einops import rearrange
-
+from ldm.modules.utils import instantiate_from_config, extract_into_tensor
+from ldm.modules.components import ResBlock, AttnBlock
+from einops import rearrange, repeat
+from tqdm import tqdm
 
 def disabled_train(self, mode=True):
     return self
@@ -31,6 +32,7 @@ class SatelliteHead(nn.Module):
         x = self.inblock(x)
         x = self.outblock(x)
         return x
+    
 class LatentDiffusion(pl.LightningModule):
     def __init__(self,
                  first_stage_config,
@@ -102,9 +104,31 @@ class LatentDiffusion(pl.LightningModule):
         for param in self.first_stage_model.parameters():
             param.requires_grad = False
 
+    def pred_prev(self, xt , t, noise):
+        return (
+                extract_into_tensor(self.sqrt_inv_alphas_cumprod, t, xt.shape) * xt -
+                extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t, xt.shape) * noise
+        )
+
     def q_sample(self, x0, t, noise):
-        return (extract_into_tensor(self.sqrt_alphas_cumprod, t, x0.shape) * x0 +
-                extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x0.shape) * noise)
+        return (
+            extract_into_tensor(self.sqrt_alphas_cumprod, t, x0.shape) * x0 +
+            extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x0.shape) * noise
+        )
+        
+    def p_sample(self, x, ctx, t):
+        eps_pred = self.backbone(x, t, ctx)
+        x_rec = self.pred_prev(x, t, eps_pred)
+
+        mean = (
+            extract_into_tensor(self.post_mean_x0_coef, t, x.shape) * x_rec +
+            extract_into_tensor(self.post_mean_xt_coef, t, x.shape) * x
+        )
+        post_var = extract_into_tensor(self.post_var, t, x.shape)
+        post_log_var = extract_into_tensor(self.post_log_var, t, x.shape) 
+
+        return mean, poster_Var , post_log_var
+
 
     def step_loss(self, x0, ctx, t):
         loss_dict = {}
@@ -174,11 +198,23 @@ class LatentDiffusion(pl.LightningModule):
                  prog_bar=True, logger=True, on_step=True, on_epoch=False)
         
         return loss
+    
+    @torch.no_grad()
+    def sample(self, ctx, batch_sz):
+        shape = (batch_sz, self.channels, self.embed_size, self.embed_size)
+        # sample noise N(0, I):
+        imgs = torch.randn(shape, device=self.device)
+        for t in tqdm(reversed(range(0, self.timesteps)), desc='Sampling t', total=self.timesteps):
+            ts = torch.full((batch_sz,), t, device=self.device)
+            imgs = self.p_sample(imgs, ctx, ts)
+
+
 
     @torch.no_grad()
     def validation_step(self, batch, batch_idx):
         _, loss_dict = self.shared_step(batch)
         self.log_dict(loss_dict, prog_bar=False, logger=True, on_step=False, on_epoch=True)
+        return loss_dict
 
     @torch.no_grad()
     def log_images(self, batch, N=8, n_row=4, sample=True, ddim_steps=200, ddim_eta=1., return_keys=None,
@@ -200,7 +236,7 @@ class LatentDiffusion(pl.LightningModule):
         log["original_conditioning"] = xc
 
         if sample:
-            samples, z_denoise_row = self.sample(cond=c, batch_size=N)
+            samples, z_denoise_row = self.sample(c, N)
             x_samples = self.decode_first_stage(samples)
             log["samples"] = x_samples
 
