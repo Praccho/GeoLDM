@@ -26,7 +26,7 @@ class SatelliteHead(nn.Module):
     def forward(self, sat_emb, lat_emb, lng_emb):
         bs, c, h, w = sat_emb.shape
 
-        se = self.inblock(se)
+        se = self.inblock(sat_emb)
         se = self.outblock(se)
         se = se.reshape(bs, c, h * w)
         se = torch.cat([se, lat_emb, lng_emb], dim=1)
@@ -67,7 +67,7 @@ class LatentDiffusion(pl.LightningModule):
         self.register_schedule(timesteps)
 
     def register_schedule(self, timesteps):
-        betas = cosine_beta_schedule(timesteps).numpy()
+        betas = cosine_beta_schedule(timesteps).clone().numpy()
         alphas = 1.-betas
 
         to_torch = partial(torch.tensor, dtype=torch.float32)
