@@ -251,13 +251,6 @@ class UNetModel(nn.Module):
         ctx = ctx.type(self.dtype)
 
         for block in self.input_blocks:
-
-            print()
-            print("Shape", h.shape)
-            print("Min", torch.min(h))
-            print("Max", torch.max(h))
-            print()
-
             h = block(h, temb, ctx)
             acts.append(h)
 

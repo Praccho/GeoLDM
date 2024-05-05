@@ -9,22 +9,23 @@ model:
       channels: 2
       p_uncond: 0.2
       backbone_config: 
-        target: ldm.models.unet.UNetModel
-        params:
-          image_size: 8
-          in_channels: 2
-          out_channels: 2
-          model_channels: 128
-          context_dim: 128
-          attention_resolutions:
-          - 8
-          - 4
-          - 2
-          num_res_blocks: 2
-          channel_mult:
-          - 1
-          - 2
-          num_head_channels: 16
+        target: ldm.models.unet_v2.UNET
+        # target: ldm.models.unet.UNetModel
+        # params:
+        #   image_size: 8
+        #   in_channels: 2
+        #   out_channels: 2
+        #   model_channels: 128
+        #   context_dim: 128
+        #   attention_resolutions:
+        #   - 8
+        #   - 4
+        #   - 2
+        #   num_res_blocks: 2
+        #   channel_mult:
+        #   - 1
+        #   - 2
+        #   num_head_channels: 16
       first_stage_config:
         target: ldm.models.autoencoder.VAE
         params:

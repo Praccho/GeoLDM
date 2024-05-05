@@ -555,7 +555,6 @@ class ResBlock(TimestepBlock):
         else:
             h = self.in_layers(x)
 
-
         print()
         print("Shape", h.shape)
         print("Min", torch.min(h))
