@@ -5,7 +5,7 @@ model:
     params:
       monitor: 'val/loss'
       timesteps: 1000
-      embed_size: 8
+      embed_size: 4
       channels: 2
       p_uncond: 0.2
       backbone_config: 
@@ -50,7 +50,7 @@ model:
 data:
   target: main.StreetSatDataModule
   params:
-    batch_size: 8
+    batch_size: 1
     train:
       target: data.datasets.StreetSatTrain
     val:

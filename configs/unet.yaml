@@ -39,3 +39,5 @@ lightning:
         batch_frequency: 5000
         max_images: 8
         increase_log_steps: True
+  trainer:
+    accumulate_grad_batches: 4
