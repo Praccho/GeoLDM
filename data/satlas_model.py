@@ -1,3 +1,4 @@
+# adapted from: 
 # pip install satlaspretrain-models
 import satlaspretrain_models
 
