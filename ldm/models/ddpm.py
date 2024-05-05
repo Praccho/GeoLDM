@@ -67,37 +67,46 @@ class LatentDiffusion(pl.LightningModule):
         self.register_schedule(timesteps)
 
     def register_schedule(self, timesteps):
-        betas = cosine_beta_schedule(timesteps).clone().numpy()
-        alphas = 1.-betas
+        betas = make_beta_schedule(timesteps)
+        alphas = 1. - betas
+        alphas_cumprod = np.cumprod(alphas, axis=0)
+        alphas_cumprod_prev = np.append(1., alphas_cumprod[:-1])
+
+        timesteps, = betas.shape
+        self.num_timesteps = int(timesteps)
+        assert alphas_cumprod.shape[0] == self.num_timesteps, 'alphas have to be defined for each timestep'
 
         to_torch = partial(torch.tensor, dtype=torch.float16)
 
         self.register_buffer('betas', to_torch(betas))
-        self.register_buffer('alphas', to_torch(alphas))
-
-        alphas_cumprod = torch.cumprod(self.alphas, dim=0)
-        alphas_cumprod_prev = torch.cat((torch.ones(1, dtype=torch.float64), alphas_cumprod[:-1]))
-
-        post_var = self.betas * (1. - alphas_cumprod_prev) / (1. - alphas_cumprod)
-        
-        self.register_buffer('betas', to_torch(self.betas))
         self.register_buffer('alphas_cumprod', to_torch(alphas_cumprod))
         self.register_buffer('alphas_cumprod_prev', to_torch(alphas_cumprod_prev))
 
+        # calculations for diffusion q(x_t | x_{t-1}) and others
         self.register_buffer('sqrt_alphas_cumprod', to_torch(np.sqrt(alphas_cumprod)))
         self.register_buffer('sqrt_sub_alphas_cumprod', to_torch(np.sqrt(1. - alphas_cumprod)))
         self.register_buffer('log_sub_alphas_cumprod', to_torch(np.log(1. - alphas_cumprod)))
         self.register_buffer('sqrt_inv_alphas_cumprod', to_torch(np.sqrt(1. / alphas_cumprod)))
         self.register_buffer('sqrt_recipm1_alphas_cumprod', to_torch(np.sqrt(1. / alphas_cumprod - 1)))
-        
-        self.register_buffer('post_var', to_torch(post_var))
-        self.register_buffer('post_log_var', to_torch(np.log(np.maximum(post_var, 1e-20))))
-        self.register_buffer('post_mean_x0_coef', to_torch(np.sqrt(alphas_cumprod_prev) * self.betas / (1. - alphas_cumprod)))
-        self.register_buffer('post_mean_xt_coef', to_torch(np.sqrt(self.alphas) * (1. - alphas_cumprod_prev) / (1. - alphas_cumprod)))
 
-        lvlb_weights = self.betas ** 2 / (2 * self.post_var * to_torch(self.alphas) * (1 - self.alphas_cumprod))
+        # calculations for posterior q(x_{t-1} | x_t, x_0)
+        post_var = betas * (1. - alphas_cumprod_prev) / (
+                    1. - alphas_cumprod)
+        # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
+        self.register_buffer('post_var', to_torch(post_var))
+        # below: log calculation clipped because the posterior variance is 0 at the beginning of the diffusion chain
+        self.register_buffer('post_log_var', to_torch(np.log(np.maximum(post_var, 1e-20))))
+        self.register_buffer('post_mean_x0_coef', to_torch(
+            betas * np.sqrt(alphas_cumprod_prev) / (1. - alphas_cumprod)))
+        self.register_buffer('post_mean_xt_coef', to_torch(
+            (1. - alphas_cumprod_prev) * np.sqrt(alphas) / (1. - alphas_cumprod)))
+
+        lvlb_weights = self.betas ** 2 / (
+                    2 * self.post_var * to_torch(alphas) * (1 - self.alphas_cumprod))
+        # TODO how to choose this term
         lvlb_weights[0] = lvlb_weights[1]
         self.register_buffer('lvlb_weights', lvlb_weights, persistent=False)
+        assert not torch.isnan(self.lvlb_weights).all()
 
     def instantiate_first_stage(self, cfg):
         self.first_stage_model = instantiate_from_config(cfg).half()
@@ -119,8 +128,7 @@ class LatentDiffusion(pl.LightningModule):
         
     def p_sample(self, x, ctx, t):
         eps_pred = self.backbone(x, t, ctx)
-        x_rec = self.pred_prev(x, t, eps_pred)
-
+        x_rec = self.pred_prev(x, t, eps_pred).clamp_(-1.,1.)
         mean = (
             extract_into_tensor(self.post_mean_x0_coef, t, x.shape) * x_rec +
             extract_into_tensor(self.post_mean_xt_coef, t, x.shape) * x
@@ -129,8 +137,9 @@ class LatentDiffusion(pl.LightningModule):
 
         noise = torch.randn(x.shape, device=self.device)
         mask = (1 - (t == 0).float()).reshape(x.shape[0], *((1,) * (len(x.shape) - 1)))
+        ret = mean + mask * (0.5 * post_log_var).exp() * noise
 
-        return mean + mask * (0.5 * post_log_var).exp() * noise
+        return ret
 
     def step_loss(self, x0, ctx, t):
         loss_dict = {}
@@ -215,12 +224,11 @@ class LatentDiffusion(pl.LightningModule):
         # sample noise N(0, I):
         imgs = torch.randn(shape, dtype=torch.float16, device=self.device)
         for t in tqdm(reversed(range(0, self.timesteps)), desc='Sampling t', total=self.timesteps):
-            ts = torch.full((batch_sz,), t, device=self.device)
-            imgs = self.p_sample(imgs, ctx, ts).half()
-        
-        return imgs
-
-
+            ts = torch.full((batch_sz,), t, device=self.device, dtype=torch.long)
+            imgs = self.p_sample(imgs, ctx, ts)
+            # print("max min:", torch.max(imgs), torch.min(imgs))
+            
+        return imgs.half()
 
     @torch.no_grad()
     def validation_step(self, batch, batch_idx):
@@ -262,31 +270,15 @@ class LatentDiffusion(pl.LightningModule):
         return opt
 
     
-def cosine_beta_schedule(timesteps, s=0.008):
+def make_beta_schedule(n_timestep, cosine_s=8e-3):
 
-    """
+    timesteps = (
+            torch.arange(n_timestep + 1, dtype=torch.float64) / n_timestep + cosine_s
+    )
+    alphas = timesteps / (1 + cosine_s) * np.pi / 2
+    alphas = torch.cos(alphas).pow(2)
+    alphas = alphas / alphas[0]
+    betas = 1 - alphas[1:] / alphas[:-1]
+    betas = np.clip(betas, a_min=0, a_max=0.999)
 
-    Generates a cosine beta schedule for the given number of timesteps.
-
-    Parameters:
-
-    - timesteps (int): The number of timesteps for the schedule.
-
-    - s (float): A small constant used in the calculation. Default: 0.008.
-
-    Returns:
-
-    - betas (torch.Tensor): The computed beta values for each timestep.
-
-    """
-
-    steps = timesteps + 1
-    x = torch.linspace(0, timesteps, steps, dtype=torch.float64)
-
-    alphas_cumprod = torch.cos(((x / timesteps) + s) / (1 + s) * torch.pi * 0.5) ** 2
-
-    alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
-
-    betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
-
-    return torch.clip(betas, 0, 0.9999)
+    return betas.numpy()
