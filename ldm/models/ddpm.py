@@ -29,7 +29,7 @@ class SatelliteHead(nn.Module):
         se = self.inblock(sat_emb)
         se = self.outblock(se)
         se = se.reshape(bs, c, h * w)
-        se = torch.cat([se, lat_emb[:, None], lng_emb[:, None]], dim=1)
+        se = torch.cat([se, lat_emb.unsqueeze(-1), lng_emb.unsqeeze(-1)], dim=1)
         se = se.permute(0,2,1)
 
         return se
