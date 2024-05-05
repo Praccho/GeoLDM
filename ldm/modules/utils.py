@@ -544,29 +544,36 @@ class ResBlock(TimestepBlock):
 
 
     def _forward(self, x, emb):
-        # if self.updown:
-        #     in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
-        #     h = in_rest(x)
+        if self.updown:
+            in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
+            h = in_rest(x)
 
-        #     h = self.h_upd(h)
-        #     x = self.x_upd(x)
+            h = self.h_upd(h)
+            x = self.x_upd(x)
 
-        #     h = in_conv(h)
-        # else:
-        #     h = self.in_layers(x)
+            h = in_conv(h)
+        else:
+            h = self.in_layers(x)
 
-        # emb_out = self.emb_layers(emb).type(h.dtype)
-        # while len(emb_out.shape) < len(h.shape):
-        #     emb_out = emb_out[..., None]
-        # if self.use_scale_shift_norm:
-        #     out_norm, out_rest = self.out_layers[0], self.out_layers[1:]
-        #     scale, shift = torch.chunk(emb_out, 2, dim=1)
-        #     h = out_norm(h) * (1 + scale) + shift
-        #     h = out_rest(h)
-        # else:
-        #     h = h + emb_out
-        #     h = self.out_layers(h)
-        return x #self.skip_connection(x) + h
+
+        print()
+        print("Shape", h.shape)
+        print("Min", torch.min(h))
+        print("Max", torch.max(h))
+        print()
+
+        emb_out = self.emb_layers(emb).type(h.dtype)
+        while len(emb_out.shape) < len(h.shape):
+            emb_out = emb_out[..., None]
+        if self.use_scale_shift_norm:
+            out_norm, out_rest = self.out_layers[0], self.out_layers[1:]
+            scale, shift = torch.chunk(emb_out, 2, dim=1)
+            h = out_norm(h) * (1 + scale) + shift
+            h = out_rest(h)
+        else:
+            h = h + emb_out
+            h = self.out_layers(h)
+        return self.skip_connection(x) + h
 
 def count_flops_attn(model, _x, y):
     """
