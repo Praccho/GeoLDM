@@ -164,14 +164,7 @@ class UNetModel(nn.Module):
                     use_checkpoint=use_checkpoint,
                     use_scale_shift_norm=use_scale_shift_norm,
                 ),
-                AttentionBlock(
-                    ch,
-                    use_checkpoint=use_checkpoint,
-                    num_heads=num_heads,
-                    num_head_channels=dim_head,
-                    use_new_attention_order=use_new_attention_order,
-                ),
-                    SpatialTransformer(
+                SpatialTransformer(
                     ch, num_heads, dim_head, depth=1, context_dim=context_dim
                 ),
                 ResBlock(
@@ -246,7 +239,7 @@ class UNetModel(nn.Module):
             self.out = nn.Sequential(
                 GroupNorm32(32, ch),
                 SiLU(),
-                zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
+                zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1, dtype=torch.float16)),
             )
             
 
@@ -255,6 +248,7 @@ class UNetModel(nn.Module):
         temb = self.time_embed(timestep_embedding(t, self.model_channels))
         
         h = x.type(self.dtype)
+        ctx = ctx.type(self.dtype)
 
         for block in self.input_blocks:
             h = block(h, temb, ctx)

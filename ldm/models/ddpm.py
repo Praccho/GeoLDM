@@ -30,7 +30,7 @@ class SatelliteHead(nn.Module):
         se = self.outblock(se)
         se = se.reshape(bs, c, h * w)
         se = torch.cat([se, lat_emb.unsqueeze(-1), lng_emb.unsqueeze(-1)], dim=-1)
-        se = se.permute(0,2,1)
+        se = se.permute(0,2,)
 
         return se
     
@@ -70,7 +70,7 @@ class LatentDiffusion(pl.LightningModule):
         betas = cosine_beta_schedule(timesteps).clone().numpy()
         alphas = 1.-betas
 
-        to_torch = partial(torch.tensor, dtype=torch.float32)
+        to_torch = partial(torch.tensor, dtype=torch.float16)
 
         self.register_buffer('betas', to_torch(betas))
         self.register_buffer('alphas', to_torch(alphas))
@@ -163,7 +163,7 @@ class LatentDiffusion(pl.LightningModule):
         bs = bs if bs else len(batch)
         x = self.get_input_key(batch, "street_image")[:bs]
         z_posterior = self.first_stage_model.encode(x)
-        z = z_posterior.sample()
+        z = z_posterior.sample().half()
         z = self.scale_factor * z
         z = z.detach()
 
@@ -210,10 +210,12 @@ class LatentDiffusion(pl.LightningModule):
     def sample(self, ctx, batch_sz):
         shape = (batch_sz, self.channels, self.embed_size, self.embed_size)
         # sample noise N(0, I):
-        imgs = torch.randn(shape, device=self.device)
+        imgs = torch.randn(shape, dtype=torch.float16, device=self.device)
         for t in tqdm(reversed(range(0, self.timesteps)), desc='Sampling t', total=self.timesteps):
             ts = torch.full((batch_sz,), t, device=self.device)
-            imgs = self.p_sample(imgs, ctx, ts)
+            imgs = self.p_sample(imgs, ctx, ts).half()
+            
+        return imgs
 
 
 
@@ -233,7 +235,6 @@ class LatentDiffusion(pl.LightningModule):
         log = dict()
         z, c, x, xrec, xc = self.get_input(batch,
                                            return_first_stage_outputs=True,
-                                           force_c_encode=True,
                                            return_original_cond=True,
                                            bs=N)
         N = min(x.shape[0], N)
@@ -243,8 +244,8 @@ class LatentDiffusion(pl.LightningModule):
         log["original_conditioning"] = xc
 
         if sample:
-            samples, z_denoise_row = self.sample(c, N)
-            x_samples = self.decode_first_stage(samples)
+            samples = self.sample(c, N)
+            x_samples = self.first_stage_model.decode(samples)
             log["samples"] = x_samples
 
         return log

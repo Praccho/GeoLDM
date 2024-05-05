@@ -44,7 +44,7 @@ class StreetSatBase(Dataset):
         satellite_img = Image.open(satellite_img_name)
         satellite_img = satellite_img.convert('RGB')
 
-        satellite_emb = torch.load(satellite_emb_name).detach()
+        satellite_emb = torch.load(satellite_emb_name, map_location='cpu').detach()
         lat_emb, lng_emb = self.pos_enc(lat, lng)
 
         # cropping satellite image
