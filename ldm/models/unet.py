@@ -244,26 +244,26 @@ class UNetModel(nn.Module):
             
 
     def forward(self, x, t, ctx):
-        acts = []
-        temb = self.time_embed(timestep_embedding(t, self.model_channels))
+        # acts = []
+        # temb = self.time_embed(timestep_embedding(t, self.model_channels))
         
-        h = x.type(self.dtype)
-        ctx = ctx.type(self.dtype)
+        # h = x.type(self.dtype)
+        # ctx = ctx.type(self.dtype)
 
-        for block in self.input_blocks:
+        # for block in self.input_blocks:
 
-            h = block(h, temb, ctx)
-            acts.append(h)
+        #     h = block(h, temb, ctx)
+        #     acts.append(h)
 
-        h = self.middle_block(h, temb, ctx)
+        # h = self.middle_block(h, temb, ctx)
 
-        for block in self.output_blocks:
-            h = torch.cat([h, acts.pop()], dim=1)
-            h = block(h, temb, ctx)
+        # for block in self.output_blocks:
+        #     h = torch.cat([h, acts.pop()], dim=1)
+        #     h = block(h, temb, ctx)
 
-        h = h.type(x.dtype)
+        # h = h.type(x.dtype)
 
-        return self.out(h)
+        return x #self.out(h)
     
 class GroupNorm32(nn.GroupNorm):
     def forward(self, x):
