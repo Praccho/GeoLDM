@@ -292,11 +292,11 @@ class UNET(nn.Module):
         # x: (Batch_Size, 4, Height / 8, Width / 8)
         # context: (Batch_Size, Seq_Len, Dim) 
         # time: (Batch_Size)
-        time = self.time_emb(time)
-
+        time = time.to(self.dtype)
         h = x.to(self.dtype)
         context = context.to(self.dtype)
-        time = time.to(self.dtype)
+
+        time = self.time_emb(time)
 
         skip_connections = []
         for layers in self.encoders:
