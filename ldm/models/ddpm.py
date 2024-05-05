@@ -178,6 +178,8 @@ class LatentDiffusion(pl.LightningModule):
 
         ctx = self.cond_stage_model(sat_emb, lat_emb, lng_emb)
 
+        print("CTX SHAOE", ctx.shape)
+
         ret = [z, ctx]
 
         if return_first_stage_outputs:

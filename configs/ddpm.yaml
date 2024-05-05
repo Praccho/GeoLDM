@@ -24,8 +24,6 @@ model:
           channel_mult:
           - 1
           - 2
-          - 3
-          - 4
           num_head_channels: 16
       first_stage_config:
         target: ldm.models.autoencoder.VAE
