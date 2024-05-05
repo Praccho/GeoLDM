@@ -10,9 +10,7 @@ import torch.nn as nn
 from ldm.modules.utils import SiLU,linear,ResBlock,AttentionBlock,SpatialTransformer,TimestepEmbedSequential,Downsample,Upsample,conv_nd,zero_module
 
 
-#full unet with attention and timestep
-
-#abstract out the other stuff to some util module
+# adapted from https://github.com/CompVis/latent-diffusion
 
 class UNetModel(nn.Module):
     def __init__(self,
@@ -253,6 +251,37 @@ class UNetModel(nn.Module):
             )
             
 
+    def forward(self, x, t, ctx):
+        acts = []
+        temb = self.time_embed(timestep_embedding(t, self.model_channels))
+        
+        h = x.type(self.dtype)
+
+        for block in self.input_blocks:
+            h = block(h, temb, ctx)
+            acts.append(h)
+
+        h = self.middle_block(h, temb, ctx)
+
+        for block in self.output_blocks:
+            h = torch.cat([h, acts.pop()], dim=1)
+            h = block(h, temb, ctx)
+
+        h = h.type(x.dtype)
+
+        return self.out(h)
+    
 class GroupNorm32(nn.GroupNorm):
     def forward(self, x):
         return super().forward(x.float()).type(x.dtype)
+    
+def timestep_embedding(timesteps, dim, max_period=10000):
+    freqs = torch.exp(
+        -math.log(max_period) * torch.arange(start=0, end=dim // 2, dtype=torch.float32) / (dim // 2)
+    ).to(device=timesteps.device)
+    args = timesteps[:, None].float() * freqs[None]
+    embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
+    if dim % 2:
+        embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
+
+    return embedding
