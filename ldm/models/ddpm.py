@@ -159,7 +159,7 @@ class LatentDiffusion(pl.LightningModule):
         return x
 
     @torch.no_grad()
-    def get_input(self, batch, return_first_stage_outputs=True, return_original_cond=True, bs=None):
+    def get_input(self, batch, return_first_stage_outputs=False, return_original_cond=False, bs=None):
         bs = bs if bs else len(batch)
         x = self.get_input_key(batch, "street_image")[:bs]
         z_posterior = self.first_stage_model.encode(x)
