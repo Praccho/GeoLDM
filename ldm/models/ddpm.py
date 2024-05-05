@@ -173,7 +173,7 @@ class LatentDiffusion(pl.LightningModule):
 
         if self.training:
             mask = torch.rand(len(batch)) < self.p_uncond
-            mask = torch.reshape(x.shape[0], *((1,) * (len(x.shape) - 1)))
+            mask = torch.reshape((z.shape[0], *((1,) * (len(z.shape) - 1))))
             sat_emb[mask] = 0
             lat_emb[mask] = 0
             lng_emb[mask] = 0
