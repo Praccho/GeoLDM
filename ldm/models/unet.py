@@ -117,7 +117,7 @@ class UNetModel(nn.Module):
                             #     num_heads=num_heads,
                             #     num_head_channels=dim_head,
                             #     use_new_attention_order=use_new_attention_order,
-                            # )
+                            # ),
                               SpatialTransformer(
                                 ch, num_heads, dim_head, depth=1, context_dim=context_dim
                             )
@@ -173,11 +173,11 @@ class UNetModel(nn.Module):
                     num_heads=num_heads,
                     num_head_channels=dim_head,
                     use_new_attention_order=use_new_attention_order,
-                ) ,
-                              SpatialTransformer(
-                                ch, num_heads, dim_head, depth=1, context_dim=context_dim
-                            )
-                ,ResBlock(
+                ),
+                    SpatialTransformer(
+                    ch, num_heads, dim_head, depth=1, context_dim=context_dim
+                ),
+                ResBlock(
                     ch,
                     time_embed_dim,
                     dropout,

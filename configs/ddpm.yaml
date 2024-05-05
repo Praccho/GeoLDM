@@ -1,39 +1,49 @@
-#dfioifuoiaudfoisadf i cant test that this works until we have the cond stage config right
+#unet
 model:
-  base_learning_rate: 2.0e-06
-  target: ldm.models.ddpm.LatentDiffusion
-  params:
-    log_every_t: 200
-    timesteps: 1000
-    image_size: 64
-    channels: 3
-    monitor: val/rec_loss
-
-    first_stage_config:
-    cond_stage_config:
-    
-    backbone_config: 
-      target: ldm.models.unet.UNetModel
-      params:
-        image_size: 64
-        in_channels: 3
-        out_channels: 3
-        model_channels: 224
-        attention_resolutions:
-        # note: this isn\t actually the resolution but
-        # the downsampling factor, i.e. this corresnponds to
-        # attention on spatial resolution 8,16,32, as the
-        # spatial resolution of the latents is 64 for f4
-        - 8
-        - 4
-        - 2
-        num_res_blocks: 2
-        channel_mult:
-        - 1
-        - 2
-        - 3
-        - 4
-        num_head_channels: 32
+    base_learning_rate: 1.0e-05
+    target: ldm.models.ddpm.LatentDiffusion
+    params:
+      monitor: 'val/loss'
+      timesteps: 1000
+      embed_size: 8
+      channels: 2
+      p_uncond: 0.2
+      backbone_config: 
+        target: ldm.models.unet.UNetModel
+        params:
+          image_size: 8
+          in_channels: 2
+          out_channels: 2
+          model_channels: 128
+          attention_resolutions:
+          - 8
+          - 4
+          - 2
+          num_res_blocks: 2
+          channel_mult:
+          - 1
+          - 2
+          - 3
+          - 4
+          num_head_channels: 16
+      first_stage_config:
+        target: ldm.models.autoencoder.VAE
+        params:
+          emb_dim: 2
+          lossconfig:
+            target: torch.nn.Identity
+          ddconfig:
+            z_channels: 2
+            resolution: 64
+            in_ch: 3
+            out_ch: 3
+            ch: 64
+            ch_mult: [1,1,2,2,4]
+            num_res_blocks: 2
+            attn_resolutions: [8]
+          ckpt_path: checkpoints/vae/8x8x2_64ch_vae.ckpt
+      cond_stage_config:
+        target: torch.nn.Identity
 
 data:
   target: main.StreetSatDataModule
@@ -42,13 +52,14 @@ data:
     train:
       target: data.datasets.StreetSatTrain
     val:
-      target: data.datasets.StreetSatVal
-
+      target: data.datasets.StreetSatVal   
 lightning:
   callbacks:
     image_logger:
       target: main.ImageLogger
       params:
-        batch_frequency: 1000
+        batch_frequency: 5000
         max_images: 8
         increase_log_steps: True
+  trainer:
+      benchmark: True

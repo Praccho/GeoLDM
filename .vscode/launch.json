@@ -28,6 +28,15 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
+        },
+        {
+            "name": "Test DDPM",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${fileDirname}",
+            "args": ["--base", "configs/ddpm.yaml", "--train"]
         }
     ]
 }
