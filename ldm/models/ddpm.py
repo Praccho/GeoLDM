@@ -49,7 +49,7 @@ class LatentDiffusion(pl.LightningModule):
                  p_uncond = 0.
             ):
         super().__init__()
-        self.instantiate_first_stage(first_stage_config).half()
+        self.instantiate_first_stage(first_stage_config)
         self.cond_stage_model = instantiate_from_config(cond_stage_config)
         self.backbone = instantiate_from_config(backbone_config)
         
@@ -100,7 +100,7 @@ class LatentDiffusion(pl.LightningModule):
         self.register_buffer('lvlb_weights', lvlb_weights, persistent=False)
 
     def instantiate_first_stage(self, cfg):
-        self.first_stage_model = instantiate_from_config(cfg)
+        self.first_stage_model = instantiate_from_config(cfg).half()
         self.first_stage_model.train = disabled_train
         for param in self.first_stage_model.parameters():
             param.requires_grad = False
