@@ -15,6 +15,7 @@ model:
           in_channels: 2
           out_channels: 2
           model_channels: 128
+          context_dim: 130
           attention_resolutions:
           - 8
           - 4
