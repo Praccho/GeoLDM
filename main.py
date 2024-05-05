@@ -200,8 +200,7 @@ class ImageLogger(Callback):
                 pl_module.train()
 
     def check_frequency(self, check_idx):
-        if ((check_idx % self.batch_freq) == 0 or (check_idx in self.log_steps)) and (
-                check_idx > 0 or self.log_first_step):
+        if (check_idx % self.batch_freq) == 0:
             try:
                 self.log_steps.pop(0)
             except IndexError as e:
