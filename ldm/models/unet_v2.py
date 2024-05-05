@@ -198,6 +198,7 @@ class UNET(nn.Module):
     def __init__(self):
         super().__init__()
         self.time_emb = TimeEmbedding(320)
+        self.dtype = torch.float32
         self.encoders = nn.ModuleList([
             # (Batch_Size, 4, Height / 4, Width / 4) -> (Batch_Size, 320, Height / 4, Width / 4)
             SwitchSequential(nn.Conv2d(4, 320, kernel_size=3, padding=1)),
@@ -293,21 +294,27 @@ class UNET(nn.Module):
         # time: (Batch_Size)
         time = self.time_emb(time)
 
+        h = x.to(self.dtype)
+        context = context.to(self.dtype)
+        time = time.to(self.dtype)
+
         skip_connections = []
         for layers in self.encoders:
-            x = layers(x, context, time)
-            skip_connections.append(x)
+            h = layers(h, context, time)
+            skip_connections.append(h)
 
-        x = self.bottleneck(x, context, time)
+        h = self.bottleneck(h, context, time)
 
         for layers in self.decoders:
             # Since we always concat with the skip connection of the encoder, the number of features increases before being sent to the decoder's layer
-            x = torch.cat((x, skip_connections.pop()), dim=1) 
-            x = layers(x, context, time)
+            h = torch.cat((h, skip_connections.pop()), dim=1) 
+            h = layers(h, context, time)
         
-        x = self.conv_out(x)
+        h = self.conv_out(h)
 
-        return x
+        h = h.to(x.dtype)
+
+        return h
 
 
 class UNET_OutputLayer(nn.Module):
