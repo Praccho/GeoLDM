@@ -188,7 +188,7 @@ class LatentDiffusion(pl.LightningModule):
             xc = self.get_input_key(batch, "satellite_image")[:bs]
             ret.append(xc)
 
-        return ret, ctx
+        return ret
 
     def shared_step(self, batch):
         x, ctx = self.get_input(batch)
