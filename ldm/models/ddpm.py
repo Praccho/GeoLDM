@@ -154,7 +154,7 @@ class LatentDiffusion(pl.LightningModule):
         if len(x.shape) == 3:
             x = x[..., None]
         x = rearrange(x, 'b h w c -> b c h w')
-        x = x.to(memory_format=torch.contiguous_format).to(type=torch.float16).to(self.device)
+        x = x.to(memory_format=torch.contiguous_format).to(device=self.device, dtype=torch.float16)
 
         return x
 
@@ -167,9 +167,9 @@ class LatentDiffusion(pl.LightningModule):
         z = self.scale_factor * z
         z = z.detach()
 
-        sat_emb = batch["satellite_emb"][:bs].to(type=torch.float16)
-        lat_emb = batch["lat_emb"][:bs].to(type=torch.float16).to(self.device)
-        lng_emb = batch["lng_emb"][:bs].to(type=torch.float16).to(self.device)
+        sat_emb = batch["satellite_emb"][:bs].to(device=self.device, dtype=torch.float16)
+        lat_emb = batch["lat_emb"][:bs].to(device=self.device, dtype=torch.float16)
+        lng_emb = batch["lng_emb"][:bs].to(device=self.device, dtype=torch.float16)
 
         if self.training:
             mask = torch.rand(len(batch)) < self.p_uncond
