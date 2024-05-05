@@ -49,7 +49,7 @@ class LatentDiffusion(pl.LightningModule):
                  p_uncond = 0.
             ):
         super().__init__()
-        self.instantiate_first_stage(first_stage_config)
+        self.instantiate_first_stage(first_stage_config).half()
         self.cond_stage_model = instantiate_from_config(cond_stage_config)
         self.backbone = instantiate_from_config(backbone_config)
         
