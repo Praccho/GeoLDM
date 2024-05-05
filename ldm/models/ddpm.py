@@ -187,6 +187,7 @@ class LatentDiffusion(pl.LightningModule):
         ret = [z, ctx]
 
         if return_first_stage_outputs:
+            z = (1. / self.scale_factor) * z
             xrec = self.first_stage_model.decode(z)
             ret.extend([x, xrec])
         if return_original_cond:
@@ -219,7 +220,7 @@ class LatentDiffusion(pl.LightningModule):
         for t in tqdm(reversed(range(0, self.timesteps)), desc='Sampling t', total=self.timesteps):
             ts = torch.full((batch_sz,), t, device=self.device)
             imgs = self.p_sample(imgs, ctx, ts).half()
-            
+        
         return imgs
 
 
@@ -250,6 +251,7 @@ class LatentDiffusion(pl.LightningModule):
 
         if sample:
             samples = self.sample(c, N)
+            samples = (1. / self.scale_factor) * samples
             x_samples = self.first_stage_model.decode(samples)
             log["samples"] = x_samples
 
