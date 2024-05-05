@@ -293,7 +293,7 @@ if __name__ == "__main__":
         num_gpus = torch.cuda.device_count()
         print(f"Available GPUs: {num_gpus}")
         trainer_cfg["gpus"] = num_gpus
-        trainer_cfg["accelerator"] = "ddp"
+        # trainer_cfg["accelerator"] = "ddp"
     else:
         print("No GPUs found, using CPU.")
         trainer_cfg["gpus"] = 0
