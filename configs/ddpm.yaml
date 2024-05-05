@@ -29,18 +29,18 @@ model:
       first_stage_config:
         target: ldm.models.autoencoder.VAE
         params:
-          emb_dim: 2
+          emb_dim: 4
           lossconfig:
             target: torch.nn.Identity
           ddconfig:
-            z_channels: 2
+            z_channels: 4
             resolution: 64
             in_ch: 3
             out_ch: 3
-            ch: 64
-            ch_mult: [1,1,2,2,4]
+            ch: 32
+            ch_mult: [1,2,4]      
             num_res_blocks: 2
-            attn_resolutions: [8]
+            attn_resolutions: [16]
           ckpt_path: checkpoints/vae/16x16x4_vae.ckpt
       cond_stage_config:
         target: ldm.models.ddpm.SatelliteHead
