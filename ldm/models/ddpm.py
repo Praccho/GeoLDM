@@ -50,7 +50,7 @@ class LatentDiffusion(pl.LightningModule):
             ):
         super().__init__()
         self.instantiate_first_stage(first_stage_config)
-        self.cond_stage_model = instantiate_from_config(cond_stage_config)
+        self.cond_stage_model = instantiate_from_config(cond_stage_config).half()
         self.backbone = instantiate_from_config(backbone_config)
         
         self.timesteps = timesteps
