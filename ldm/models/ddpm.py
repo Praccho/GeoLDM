@@ -114,7 +114,7 @@ class LatentDiffusion(pl.LightningModule):
     def q_sample(self, x0, t, noise):
         return (
             extract_into_tensor(self.sqrt_alphas_cumprod, t, x0.shape) * x0 +
-            extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, x0.shape) * noise
+            extract_into_tensor(self.sqrt_sub_alphas_cumprod, t, x0.shape) * noise
         )
         
     def p_sample(self, x, ctx, t):
