@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from ldm.models.attention import SelfAttention, CrossAttention
+import math
 
 class TimeEmbedding(nn.Module):
     def __init__(self, n_embd):
@@ -289,13 +290,14 @@ class UNET(nn.Module):
         self.conv_out = UNET_OutputLayer(320, 4)
 
     def forward(self, x, time, context):
-        # x: (Batch_Size, 4, Height / 8, Width / 8)
+        # x: (Batch_Size, 4, Height / 4, Width / 4)
         # context: (Batch_Size, Seq_Len, Dim) 
         # time: (Batch_Size)
         time = time.to(self.dtype)
         h = x.to(self.dtype)
         context = context.to(self.dtype)
 
+        time = timestep_embedding(time, 320)
         time = self.time_emb(time)
 
         skip_connections = []
@@ -337,3 +339,15 @@ class UNET_OutputLayer(nn.Module):
         
         # (Batch_Size, 4, Height / 4, Width / 4) 
         return x
+    
+
+def timestep_embedding(timesteps, dim, max_period=10000):
+    freqs = torch.exp(
+        -math.log(max_period) * torch.arange(start=0, end=dim // 2, dtype=torch.float32) / (dim // 2)
+    ).to(device=timesteps.device)
+    args = timesteps[:, None].float() * freqs[None]
+    embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
+    if dim % 2:
+        embedding = torch.cat([embedding, torch.zeros_like(embedding[:, :1])], dim=-1)
+
+    return embedding
