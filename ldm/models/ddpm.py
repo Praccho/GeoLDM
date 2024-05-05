@@ -139,6 +139,8 @@ class LatentDiffusion(pl.LightningModule):
         noise = torch.randn_like(x0)
         xt = self.q_sample(x0, t, noise)
         noise_pred = self.backbone(xt, t, ctx)
+        print(noise)
+        print(noise_pred)
         
         loss_simple = torch.nn.functional.mse_loss(noise, noise_pred, reduction='none').mean()
         loss_dict.update({f'{pref}/loss': loss_simple})
