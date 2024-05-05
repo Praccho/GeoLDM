@@ -41,7 +41,7 @@ model:
             ch_mult: [1,1,2,2,4]
             num_res_blocks: 2
             attn_resolutions: [8]
-          ckpt_path: checkpoints/vae/8x8x2_64ch_vae.ckpt
+          ckpt_path: checkpoints/vae/16x16x4_vae.ckpt
       cond_stage_config:
         target: ldm.models.ddpm.SatelliteHead
         params:
