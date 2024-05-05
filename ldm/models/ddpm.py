@@ -29,6 +29,9 @@ class SatelliteHead(nn.Module):
         se = self.inblock(sat_emb)
         se = self.outblock(se)
         se = se.reshape(bs, c, h * w)
+        print("se shape:", se.shape)
+        print("latemb shape:", lat_emb.shape)
+        print("lngemb shape:", lng_emb.shape)
         se = torch.cat([se, lat_emb, lng_emb], dim=1)
         se = se.permute(0,2,1)
 
