@@ -30,6 +30,7 @@ class SatelliteHead(nn.Module):
         se = self.outblock(se)
         se = se.reshape(bs, c, h * w)
         se = torch.cat([se, lat_emb.unsqueeze(-1), lng_emb.unsqueeze(-1)], dim=-1)
+        se = rearrange(se, 'b h w c -> b c h w')
 
         return se
     
