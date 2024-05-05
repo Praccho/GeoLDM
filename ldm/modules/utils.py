@@ -291,7 +291,7 @@ class CrossAttention(nn.Module):
 
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h=h), (q, k, v))
 
-        sim = np.einsum('b i d, b j d -> b i j', q, k) * self.scale
+        sim = torch.einsum('b i d, b j d -> b i j', q, k) * self.scale
 
         if exists(mask):
             mask = rearrange(mask, 'b ... -> b (...)')
@@ -302,7 +302,7 @@ class CrossAttention(nn.Module):
         # attention, what we cannot get enough of
         attn = sim.softmax(dim=-1)
 
-        out = np.einsum('b i j, b j d -> b i d', attn, v)
+        out = torch.einsum('b i j, b j d -> b i d', attn, v)
         out = rearrange(out, '(b h) n d -> b n (h d)', h=h)
         return self.to_out(out)
     
@@ -577,7 +577,7 @@ def count_flops_attn(model, _x, y):
         )
     """
     b, c, *spatial = y[0].shape
-    num_spatial = int(np.prod(spatial))
+    num_spatial = int(torch.prod(spatial))
     # We perform two matmuls with the same number of ops.
     # The first computes the weight matrix, the second computes
     # the combination of the value vectors.
