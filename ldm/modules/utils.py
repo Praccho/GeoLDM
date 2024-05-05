@@ -547,8 +547,14 @@ class ResBlock(TimestepBlock):
         if self.updown:
             in_rest, in_conv = self.in_layers[:-1], self.in_layers[-1]
             h = in_rest(x)
+            print
+            print("Shape", h.shape)
+            print("Min", torch.min(h))
+            print("Max", torch.max(h))
+            print
             h = self.h_upd(h)
             x = self.x_upd(x)
+
             h = in_conv(h)
         else:
             h = self.in_layers(x)
