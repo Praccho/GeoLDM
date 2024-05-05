@@ -6,7 +6,7 @@ model:
       monitor: 'val/loss'
       timesteps: 1000
       embed_size: 4
-      channels: 2
+      channels: 4
       p_uncond: 0.2
       backbone_config: 
         target: ldm.models.unet_v2.UNET

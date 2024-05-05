@@ -41,8 +41,8 @@ class LatentDiffusion(pl.LightningModule):
                  backbone_config,
                  timesteps = 1000,
                  monitor = "val/loss",
-                 embed_size = 8,
-                 channels = 2,
+                 embed_size = 4,
+                 image_size = 16,
                  log_every_t = 100,
                  clip_denoised = True,
                  scale_factor = 0.18215, # the holy number
@@ -57,7 +57,7 @@ class LatentDiffusion(pl.LightningModule):
         self.clip_denoised = clip_denoised
         self.log_every_t = log_every_t
         self.embed_size = embed_size
-        self.channels = channels
+        self.image_size = image_size
         self.scale_factor = scale_factor
         self.p_uncond = p_uncond
 
@@ -209,7 +209,7 @@ class LatentDiffusion(pl.LightningModule):
     
     @torch.no_grad()
     def sample(self, ctx, batch_sz):
-        shape = (batch_sz, self.channels, self.embed_size, self.embed_size)
+        shape = (batch_sz, self.embed_size, self.image_size, self.image_size)
         # sample noise N(0, I):
         imgs = torch.randn(shape, dtype=torch.float16, device=self.device)
         for t in tqdm(reversed(range(0, self.timesteps)), desc='Sampling t', total=self.timesteps):
