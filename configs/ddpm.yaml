@@ -65,3 +65,4 @@ lightning:
         increase_log_steps: True
   trainer:
       benchmark: True
+      accumulate_grad_batches: 4
