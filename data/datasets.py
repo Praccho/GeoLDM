@@ -68,7 +68,7 @@ class StreetSatBase(Dataset):
         satellite_img = np.array(satellite_img).astype(np.float32)
         satellite_img = (satellite_img / 127.5 - 1.0).astype(np.float32)
 
-        sample = {'lat_emb': lat_emb, 'lng_emb': lng_emb, 
+        sample = {'lat': lat, 'lng': lng, 'lat_emb': lat_emb, 'lng_emb': lng_emb, 
                   'street_image': street_img, 'satellite_image': satellite_img, 'satellite_emb': satellite_emb}
 
         return sample

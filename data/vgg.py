@@ -14,7 +14,7 @@ from main import StreetSatDataModule
 
 
 class VGG(nn.Module):
-    def __init__(self, device, input_shape=(128,128,3)):
+    def __init__(self, device, input_shape=(3,128,128)):
         self.vgg = VGG19(weights='imagenet', include_top=False, input_shape=input_shape).to(device)
 
     def call(self, x):
