@@ -8,6 +8,8 @@ model:
       embed_size: 4
       image_size: 16
       p_uncond: 0.2
+      use_cfg: True
+      cfg_scale: 3
       backbone_config: 
         target: ldm.models.unet_v2.UNET
         # target: ldm.models.unet.UNetModel

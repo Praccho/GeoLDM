@@ -46,7 +46,10 @@ class LatentDiffusion(pl.LightningModule):
                  log_every_t = 100,
                  clip_denoised = True,
                  scale_factor = 0.18215, # the holy number
-                 p_uncond = 0.
+                 ckpt_path = None,
+                 use_cfg = False,
+                 p_uncond = 0.,
+                 cfg_scale = 5
             ):
         super().__init__()
         self.instantiate_first_stage(first_stage_config)
@@ -59,12 +62,32 @@ class LatentDiffusion(pl.LightningModule):
         self.embed_size = embed_size
         self.image_size = image_size
         self.scale_factor = scale_factor
-        self.p_uncond = p_uncond
+        self.use_cfg = use_cfg
+        self.cfg_scale = cfg_scale
+
+        if use_cfg:
+            self.p_uncond = p_uncond if p_uncond != 0. else 0.2
+        else:
+            self.p_uncond = 0.
 
         if monitor is not None:
             self.monitor = monitor
 
         self.register_schedule(timesteps)
+
+        if ckpt_path:
+            self.init_from_ckpt(ckpt_path)
+
+    def init_from_ckpt(self, path, ignore_keys=list()):
+        sd = torch.load(path, map_location="cpu")["state_dict"]
+        keys = list(sd.keys())
+        for k in keys:
+            for ik in ignore_keys:
+                if k.startswith(ik):
+                    print("Deleting key {} from state_dict.".format(k))
+                    del sd[k]
+        self.load_state_dict(sd, strict=False)
+        print(f"Restored from {path}")
 
     def register_schedule(self, timesteps):
         betas = make_beta_schedule(timesteps)
@@ -126,9 +149,15 @@ class LatentDiffusion(pl.LightningModule):
             extract_into_tensor(self.sqrt_sub_alphas_cumprod, t, x0.shape) * noise
         )
         
-    def p_sample(self, x, ctx, t):
+    def p_sample(self, x, ctx, t, use_cfg=False):
         eps_pred = self.backbone(x, t, ctx)
-        x_rec = self.pred_prev(x, t, eps_pred).clamp_(-1.,1.)
+        if use_cfg:
+            eps_pred_cond, eps_pred_uncond = torch.chunk(eps_pred, 2)
+            eps_pred = (self.cfg_scale + 1) * eps_pred_cond - self.cfg_scale * eps_pred_uncond
+            x, _ = torch.chunk(x, 2)
+            t, _ = torch.chunk(t, 2)
+
+        x_rec = self.pred_prev(x, t, eps_pred)
         mean = (
             extract_into_tensor(self.post_mean_x0_coef, t, x.shape) * x_rec +
             extract_into_tensor(self.post_mean_xt_coef, t, x.shape) * x
@@ -222,12 +251,24 @@ class LatentDiffusion(pl.LightningModule):
     
     @torch.no_grad()
     def sample(self, ctx, batch_sz):
-        shape = (batch_sz, self.embed_size, self.image_size, self.image_size)
+        
+        bs = batch_sz if not self.use_cfg else 2 * batch_sz
+
+        if self.use_cfg:
+            uncond_ctx = torch.zeros_like(ctx.shape, dtype=torch.float32, device=self.device)
+            ctx = torch.cat(ctx, uncond_ctx)
+
         # sample noise N(0, I):
+        shape = (batch_sz, self.embed_size, self.image_size, self.image_size)
         imgs = torch.randn(shape, dtype=torch.float32, device=self.device)
+
         for t in tqdm(reversed(range(0, self.timesteps)), desc='Sampling t', total=self.timesteps):
-            ts = torch.full((batch_sz,), t, device=self.device, dtype=torch.long)
-            imgs = self.p_sample(imgs, ctx, ts)
+            if self.use_cfg:
+                imgs = imgs.repeat(2,1,1,1)
+
+            ts = torch.full((bs,), t, device=self.device, dtype=torch.long)
+            imgs = self.p_sample(imgs, ctx, ts, use_cfg=self.use_cfg)
+
             # print("max min:", torch.max(imgs), torch.min(imgs))
             
         return imgs
