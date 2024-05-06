@@ -50,7 +50,7 @@ class LatentDiffusion(pl.LightningModule):
             ):
         super().__init__()
         self.instantiate_first_stage(first_stage_config)
-        self.cond_stage_model = instantiate_from_config(cond_stage_config).half()
+        self.cond_stage_model = instantiate_from_config(cond_stage_config)
         self.backbone = instantiate_from_config(backbone_config)
         
         self.timesteps = timesteps
@@ -76,7 +76,7 @@ class LatentDiffusion(pl.LightningModule):
         self.num_timesteps = int(timesteps)
         assert alphas_cumprod.shape[0] == self.num_timesteps, 'alphas have to be defined for each timestep'
 
-        to_torch = partial(torch.tensor, dtype=torch.float16)
+        to_torch = partial(torch.tensor, dtype=torch.float32)
 
         self.register_buffer('betas', to_torch(betas))
         self.register_buffer('alphas_cumprod', to_torch(alphas_cumprod))
@@ -109,7 +109,7 @@ class LatentDiffusion(pl.LightningModule):
         assert not torch.isnan(self.lvlb_weights).all()
 
     def instantiate_first_stage(self, cfg):
-        self.first_stage_model = instantiate_from_config(cfg).half()
+        self.first_stage_model = instantiate_from_config(cfg)
         self.first_stage_model.train = disabled_train
         for param in self.first_stage_model.parameters():
             param.requires_grad = False
@@ -163,7 +163,7 @@ class LatentDiffusion(pl.LightningModule):
         if len(x.shape) == 3:
             x = x[..., None]
         x = rearrange(x, 'b h w c -> b c h w')
-        x = x.to(memory_format=torch.contiguous_format).to(device=self.device, dtype=torch.float16)
+        x = x.to(memory_format=torch.contiguous_format).to(device=self.device, dtype=torch.float32)
 
         return x
 
@@ -172,13 +172,13 @@ class LatentDiffusion(pl.LightningModule):
         bs = bs if bs else len(batch)
         x = self.get_input_key(batch, "street_image")[:bs]
         z_posterior = self.first_stage_model.encode(x)
-        z = z_posterior.sample().half()
+        z = z_posterior.sample()
         z = self.scale_factor * z
         z = z.detach()
 
-        sat_emb = batch["satellite_emb"][:bs].to(device=self.device, dtype=torch.float16)
-        lat_emb = batch["lat_emb"][:bs].to(device=self.device, dtype=torch.float16)
-        lng_emb = batch["lng_emb"][:bs].to(device=self.device, dtype=torch.float16)
+        sat_emb = batch["satellite_emb"][:bs].to(device=self.device, dtype=torch.float32)
+        lat_emb = batch["lat_emb"][:bs].to(device=self.device, dtype=torch.float32)
+        lng_emb = batch["lng_emb"][:bs].to(device=self.device, dtype=torch.float32)
 
         if self.training:
             mask = torch.rand(len(batch)) < self.p_uncond
@@ -224,13 +224,13 @@ class LatentDiffusion(pl.LightningModule):
     def sample(self, ctx, batch_sz):
         shape = (batch_sz, self.embed_size, self.image_size, self.image_size)
         # sample noise N(0, I):
-        imgs = torch.randn(shape, dtype=torch.float16, device=self.device)
+        imgs = torch.randn(shape, dtype=torch.float32, device=self.device)
         for t in tqdm(reversed(range(0, self.timesteps)), desc='Sampling t', total=self.timesteps):
             ts = torch.full((batch_sz,), t, device=self.device, dtype=torch.long)
             imgs = self.p_sample(imgs, ctx, ts)
             # print("max min:", torch.max(imgs), torch.min(imgs))
             
-        return imgs.half()
+        return imgs
 
     @torch.no_grad()
     def validation_step(self, batch, batch_idx):

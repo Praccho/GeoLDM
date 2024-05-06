@@ -239,7 +239,7 @@ class UNetModel(nn.Module):
             self.out = nn.Sequential(
                 GroupNorm32(32, ch),
                 SiLU(),
-                zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1, dtype=torch.float16)),
+                zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
             )
             
 

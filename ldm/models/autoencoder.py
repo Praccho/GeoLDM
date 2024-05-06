@@ -19,7 +19,7 @@ class DiagonalGaussianDistribution():
         self.var = torch.exp(self.logvar)
 
     def sample(self):
-        eps = torch.randn(self.mean.shape).to(device=self.mean_logvar.device, dtype=torch.float16)
+        eps = torch.randn(self.mean.shape).to(device=self.mean_logvar.device, dtype=torch.float32)
         z = self.mean + self.std * eps
         return z
     
