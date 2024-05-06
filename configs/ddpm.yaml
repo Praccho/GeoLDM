@@ -1,6 +1,6 @@
 #unet
 model:
-    base_learning_rate: 1.0e-06
+    base_learning_rate: 5.0e-05
     target: ldm.models.ddpm.LatentDiffusion
     params:
       monitor: 'val/loss'
