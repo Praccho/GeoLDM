@@ -185,6 +185,7 @@ class LatentDiffusion(pl.LightningModule):
             mask = mask.reshape((-1, 1, 1, 1))
             mask = mask.repeat(1, *sat_emb.shape[1:])
             print(mask.shape)
+            print(sat_emb.shape)
             sat_emb[mask] = 0
             lat_emb[mask] = 0
             lng_emb[mask] = 0
