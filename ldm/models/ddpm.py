@@ -12,6 +12,7 @@ import pytorch_lightning as pl
 
 from ldm.modules.utils import instantiate_from_config, extract_into_tensor, disabled_train
 from ldm.modules.components import ResBlock, AttnBlock
+from ldm.modules.metrics import SSIM, FID
 from einops import rearrange, repeat
 from tqdm import tqdm
 
@@ -219,7 +220,7 @@ class LatentDiffusion(pl.LightningModule):
             lat_emb[mask] = 0
             lng_emb[mask] = 0
 
-        ctx = self.cond_stage_model(sat_emb, lat_emb, lng_emb)
+        ctx = (sat_emb, lat_emb, lng_emb)
 
         ret = [z, ctx]
 
@@ -235,6 +236,7 @@ class LatentDiffusion(pl.LightningModule):
 
     def shared_step(self, batch):
         x, ctx = self.get_input(batch)
+        ctx = self.cond_stage_model(*ctx)
         loss, loss_dict = self(x, ctx)
         return loss, loss_dict
     
@@ -255,8 +257,8 @@ class LatentDiffusion(pl.LightningModule):
         bs = batch_sz if not self.use_cfg else 2 * batch_sz
 
         if self.use_cfg:
-            uncond_ctx = torch.zeros_like(ctx.shape, dtype=torch.float32, device=self.device)
-            ctx = torch.cat(ctx, uncond_ctx)
+            uncond_ctx = torch.zeros_like(ctx, dtype=torch.float32, device=self.device)
+            ctx = torch.cat([ctx, uncond_ctx])
 
         # sample noise N(0, I):
         shape = (batch_sz, self.embed_size, self.image_size, self.image_size)
@@ -291,6 +293,8 @@ class LatentDiffusion(pl.LightningModule):
                                            return_first_stage_outputs=True,
                                            return_original_cond=True,
                                            bs=N)
+        
+        c = self.cond_stage_model(*c)
         N = min(x.shape[0], N)
         n_row = min(x.shape[0], n_row)
         log["inputs"] = x
