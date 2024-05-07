@@ -38,19 +38,19 @@ if __name__ == '__main__':
     test_cfg = {'target': 'data.datasets.StreetSatTest'}
     val_cfg = {'target': 'data.datasets.StreetSatVal'}
 
-    to_dir = 'data/val/satemb_hydra'
-    data_loader = StreetSatDataModule(8, val=val_cfg, train=train_cfg, num_workers=1)
+    to_dir = 'data/test/satemb_vgg'
+    data_loader = StreetSatDataModule(256, val=val_cfg, train=train_cfg, test_cfg=test_cfg, num_workers=1)
     data_loader.setup()
-    samples = data_loader._val_dataloader()
+    samples = data_loader._test_dataloader()
     print("Initialized DataLoader")
 
     # load data from dataloader
     for batch in tqdm(samples):
-        lats, lngs, sat_imgs = batch['latitude'], batch['longitude'], batch['satellite_image']
+        lats, lngs, sat_imgs = batch['lat'], batch['lng'], batch['satellite_image']
         inds = []
         outpaths = []
         for i, (lat, lng) in enumerate(zip(lats, lngs)):
-            filename = f"{lat},{lng}_satemb.pt"
+            filename = f"{lat},{lng}_satemb_vgg.pt"
             outpath = os.path.join(to_dir, filename)
 
             if os.path.exists(outpath):
