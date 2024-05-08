@@ -158,7 +158,7 @@ class LatentDiffusion(pl.LightningModule):
             x, _ = torch.chunk(x, 2)
             t, _ = torch.chunk(t, 2)
 
-        x_rec = self.pred_prev(x, t, eps_pred)
+        x_rec = self.pred_prev(x, t, eps_pred).clamp_(-3.,3.)
         mean = (
             extract_into_tensor(self.post_mean_x0_coef, t, x.shape) * x_rec +
             extract_into_tensor(self.post_mean_xt_coef, t, x.shape) * x
