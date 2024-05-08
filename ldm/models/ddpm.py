@@ -196,6 +196,11 @@ class LatentDiffusion(pl.LightningModule):
         x = x.to(memory_format=torch.contiguous_format).to(device=self.device, dtype=torch.float32)
 
         return x
+    
+    def get_decoding(self, z):
+        z = (1. / self.scale_factor) * z
+        rec = self.first_stage_model.decode(z)
+        return rec
 
     @torch.no_grad()
     def get_input(self, batch, return_first_stage_outputs=False, return_original_cond=False, bs=None):
