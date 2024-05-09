@@ -34,7 +34,7 @@ class StreetSatBase(Dataset):
     def __getitem__(self, idx):
         street_img_name = os.path.join(self.street_dir, self.image_files[idx])
         lat_lng = self.image_files[idx].split('_')[0]
-        lat, lng = map(float, lat_lng.split(','))
+        lat, lng = lat_lng.split(',')
         # lat, lng = torch.tensor(lat), torch.tensor(lng)
 
         satellite_img_name = os.path.join(self.satellite_dir, f'{lat_lng}_sat.png')
@@ -48,7 +48,7 @@ class StreetSatBase(Dataset):
 
         satellite_emb = torch.load(satellite_emb_name, map_location='cpu').detach()
         satellite_emb_vgg = torch.load(satellite_emb_vgg_name, map_location='cpu').detach()
-        lat_emb, lng_emb = self.pos_enc(lat, lng)
+        lat_emb, lng_emb = self.pos_enc(float(lat), float(lng))
 
         # cropping satellite image
         SAT_IMG_OUT_SIZE = 128
