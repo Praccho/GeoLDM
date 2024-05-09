@@ -78,7 +78,7 @@ class StreetSatBase(Dataset):
         return sample
     
     def pos_enc(self, lat, lng, model_dim=128):
-        lat, lng = torch.tensor(lat), torch.tensor(lng)
+        lat, lng = torch.clone(lat).detach(), torch.clone(lng).detach()
         
         MIN_LAT = 24.396308     # key west, florida
         MAX_LAT = 49.384358     # northwest angle, minnesota 
