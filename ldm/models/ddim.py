@@ -77,7 +77,7 @@ class DDIMWrapper(object):
         
 
         imgs = torch.randn(shape, dtype=torch.float32, device=self.model.device)
-        time_range = tqdm(np.flip(self.ddim_timesteps), desc='DDIM sampling', total=self.ddim_num_timesteps)
+        time_range = tqdm(np.flip(self.ddim_timesteps), desc='DDIM sampling', total=ddim_num_steps)
 
         for i, t in enumerate(time_range):
             if cfg_scale:
