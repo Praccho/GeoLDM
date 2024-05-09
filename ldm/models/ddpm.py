@@ -49,6 +49,7 @@ class LatentDiffusion(pl.LightningModule):
                  scale_factor = 0.18215, # the holy number
                  ckpt_path = None,
                  use_cfg = False,
+                 cond_key = "sat_emb",
                  p_uncond = 0.,
                  cfg_scale = 5
             ):
@@ -65,6 +66,7 @@ class LatentDiffusion(pl.LightningModule):
         self.scale_factor = scale_factor
         self.use_cfg = use_cfg
         self.cfg_scale = cfg_scale
+        self.cond_key = cond_key
 
         if use_cfg:
             self.p_uncond = p_uncond if p_uncond != 0. else 0.2
@@ -203,15 +205,15 @@ class LatentDiffusion(pl.LightningModule):
         return rec
 
     @torch.no_grad()
-    def get_input(self, batch, return_first_stage_outputs=False, return_original_cond=False, bs=None):
+    def get_input(self, batch, return_first_stage_outputs=False, return_original_cond=False, cond_key="sat_emb", bs=None):
         bs = bs if bs else len(batch)
-        x = self.get_input_key(batch, "street_image")[:bs]
+        x = self.get_input_key(batch, "street_image", cond_key=self.cond_key)[:bs]
         z_posterior = self.first_stage_model.encode(x)
         z = z_posterior.sample()
         z = self.scale_factor * z
         z = z.detach()
 
-        sat_emb = batch["satellite_emb"][:bs].to(device=self.device, dtype=torch.float32)
+        sat_emb = batch[cond_key][:bs].to(device=self.device, dtype=torch.float32)
         lat_emb = batch["lat_emb"][:bs].to(device=self.device, dtype=torch.float32)
         lng_emb = batch["lng_emb"][:bs].to(device=self.device, dtype=torch.float32)
 
@@ -240,7 +242,7 @@ class LatentDiffusion(pl.LightningModule):
         return ret
 
     def shared_step(self, batch):
-        x, ctx = self.get_input(batch)
+        x, ctx = self.get_input(batch, cond_key=self.cond_key)
         ctx = self.cond_stage_model(*ctx)
         loss, loss_dict = self(x, ctx)
         return loss, loss_dict
@@ -295,6 +297,7 @@ class LatentDiffusion(pl.LightningModule):
 
         log = dict()
         z, c, x, xrec, xc = self.get_input(batch,
+                                           cond_key=self.cond_key,
                                            return_first_stage_outputs=True,
                                            return_original_cond=True,
                                            bs=N)
