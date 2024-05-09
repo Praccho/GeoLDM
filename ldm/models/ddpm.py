@@ -10,6 +10,7 @@ import numpy as np
 
 import pytorch_lightning as pl
 
+from ldm.models.ddim import DDIMWrapper
 from ldm.modules.utils import instantiate_from_config, extract_into_tensor, disabled_train
 from ldm.modules.components import ResBlock, AttnBlock
 from ldm.modules.metrics import SSIM, FID
@@ -51,7 +52,8 @@ class LatentDiffusion(pl.LightningModule):
                  use_cfg = False,
                  cond_key = "sat_emb",
                  p_uncond = 0.,
-                 cfg_scale = 5
+                 cfg_scale = 0.,
+                 use_ddim = False
             ):
         super().__init__()
         self.instantiate_first_stage(first_stage_config)
@@ -67,6 +69,7 @@ class LatentDiffusion(pl.LightningModule):
         self.use_cfg = use_cfg
         self.cfg_scale = cfg_scale
         self.cond_key = cond_key
+        self.use_ddim = use_ddim
 
         if use_cfg:
             self.p_uncond = p_uncond if p_uncond != 0. else 0.2
@@ -250,6 +253,12 @@ class LatentDiffusion(pl.LightningModule):
     
     @torch.no_grad()
     def sample(self, ctx, batch_sz):
+
+        shape = (batch_sz, self.embed_size, self.image_size, self.image_size)
+
+        if self.use_ddim:
+            ddim_sampler = DDIMWrapper(self)
+            return ddim_sampler.sample(200, ctx, batch_sz, shape, cfg_scale = self.cfg_scale if self.use_cfg else None)
         
         bs = batch_sz if not self.use_cfg else 2 * batch_sz
 
@@ -258,7 +267,6 @@ class LatentDiffusion(pl.LightningModule):
             ctx = torch.cat([ctx, uncond_ctx])
 
         # sample noise N(0, I):
-        shape = (batch_sz, self.embed_size, self.image_size, self.image_size)
         imgs = torch.randn(shape, dtype=torch.float32, device=self.device)
 
         for t in tqdm(reversed(range(0, self.timesteps)), desc='Sampling t', total=self.timesteps):

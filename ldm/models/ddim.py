@@ -80,6 +80,8 @@ class DDIMWrapper(object):
         time_range = tqdm(np.flip(self.ddim_timesteps), desc='DDIM sampling', total=self.ddpm_num_timesteps)
 
         for i, t in enumerate(time_range):
+            if self.use_cfg:
+                imgs = imgs.repeat(2,1,1,1)
             idx = len(self.ddim_timesteps) - i - 1
             ts = torch.fill((bs,), t, device=self.device, dtype=torch.long)
 
