@@ -21,6 +21,7 @@ class StreetSatBase(Dataset):
         self.street_dir = os.path.join(root, 'street')
         self.satellite_dir = os.path.join(root, 'satellite')
         self.satellite_emb_dir = os.path.join(root, 'satemb')
+        self.satellite_emb_vgg_dir = os.path.join(root, 'satemb_vgg')
         self.transform = transform
         self.size = size
         self.resize = transforms.Resize((size, size)) if size else None
@@ -38,7 +39,7 @@ class StreetSatBase(Dataset):
 
         satellite_img_name = os.path.join(self.satellite_dir, f'{lat_lng}_sat.png')
         satellite_emb_name = os.path.join(self.satellite_emb_dir, f'{lat_lng}_satemb.pt')
-        satellite_emb_vgg_name = os.path.join(self.satellite_emb_dir, f'{lat_lng}_satemb_vgg.pt')
+        satellite_emb_vgg_name = os.path.join(self.satellite_emb_vgg_dir, f'{lat_lng}_satemb_vgg.pt')
 
         street_img = Image.open(street_img_name)
 
