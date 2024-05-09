@@ -36,6 +36,8 @@ class StreetSatBase(Dataset):
         lat_lng = self.image_files[idx].split('_')[0]
         lat, lng = lat_lng.split(',')
         # lat, lng = torch.tensor(lat), torch.tensor(lng)
+        print(lat)
+        print(lng)
 
         satellite_img_name = os.path.join(self.satellite_dir, f'{lat_lng}_sat.png')
         satellite_emb_name = os.path.join(self.satellite_emb_dir, f'{lat_lng}_satemb.pt')
@@ -71,6 +73,9 @@ class StreetSatBase(Dataset):
         satellite_img = np.array(satellite_img).astype(np.float32)
         satellite_img = (satellite_img / 127.5 - 1.0).astype(np.float32)
 
+        print(lat)
+        print(lng)
+
         sample = {'lat': lat, 'lng': lng, 'lat_emb': lat_emb, 'lng_emb': lng_emb, 
                   'street_image': street_img, 'satellite_image': satellite_img, 
                   'sat_emb': satellite_emb, 'sat_emb_vgg': satellite_emb_vgg}
@@ -78,7 +83,7 @@ class StreetSatBase(Dataset):
         return sample
     
     def pos_enc(self, lat, lng, model_dim=128):
-        lat, lng = torch.clone(lat).detach(), torch.clone(lng).detach()
+        lat, lng = lat, lng
         
         MIN_LAT = 24.396308     # key west, florida
         MAX_LAT = 49.384358     # northwest angle, minnesota 
