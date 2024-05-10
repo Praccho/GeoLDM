@@ -9,10 +9,10 @@ model:
       image_size: 16
       p_uncond: 0.2
       use_cfg: True
-      cfg_scale: 3,
+      cfg_scale: 3
       cond_key: sat_emb_vgg
       backbone_config: 
-        target: ldm.models.unet_v2.UNET
+        target: ldm.models.unet.UNET
       first_stage_config:
         target: ldm.models.autoencoder.VAE
         params:

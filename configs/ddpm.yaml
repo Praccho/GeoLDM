@@ -9,7 +9,7 @@ model:
       image_size: 16
       p_uncond: 0.2
       backbone_config: 
-        target: ldm.models.unet_v2.UNET
+        target: ldm.models.unet.UNET
         # target: ldm.models.unet.UNetModel
         # params:
         #   image_size: 8

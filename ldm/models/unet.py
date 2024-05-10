@@ -308,7 +308,6 @@ class UNET(nn.Module):
         h = self.bottleneck(h, context, time)
 
         for layers in self.decoders:
-            # Since we always concat with the skip connection of the encoder, the number of features increases before being sent to the decoder's layer
             h = torch.cat((h, skip_connections.pop()), dim=1) 
             h = layers(h, context, time)
         

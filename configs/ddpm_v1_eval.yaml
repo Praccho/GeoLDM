@@ -11,7 +11,7 @@ model:
       cfg_scale: 3
       ckpt_path: checkpoints/ddpm/ldm_v1.ckpt
       backbone_config: 
-        target: ldm.models.unet_v2.UNET
+        target: ldm.models.unet.UNET
         # target: ldm.models.unet.UNetModel
         # params:
         #   image_size: 8

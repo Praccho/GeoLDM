@@ -1,9 +1,10 @@
 import os
 import torch
 import numpy as np
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 import torchvision.transforms as transforms
+from tqdm import tqdm
 
 
 class StreetSatBase(Dataset):
@@ -36,8 +37,6 @@ class StreetSatBase(Dataset):
         lat_lng = self.image_files[idx].split('_')[0]
         lat, lng = lat_lng.split(',')
         # lat, lng = torch.tensor(lat), torch.tensor(lng)
-        print(lat)
-        print(lng)
 
         satellite_img_name = os.path.join(self.satellite_dir, f'{lat_lng}_sat.png')
         satellite_emb_name = os.path.join(self.satellite_emb_dir, f'{lat_lng}_satemb.pt')
@@ -72,9 +71,6 @@ class StreetSatBase(Dataset):
 
         satellite_img = np.array(satellite_img).astype(np.float32)
         satellite_img = (satellite_img / 127.5 - 1.0).astype(np.float32)
-
-        print(lat)
-        print(lng)
 
         sample = {'lat': lat, 'lng': lng, 'lat_emb': lat_emb, 'lng_emb': lng_emb, 
                   'street_image': street_img, 'satellite_image': satellite_img, 
@@ -121,6 +117,10 @@ class StreetSatTest(StreetSatBase):
         super().__init__(root='data/test', **kwargs)
 
 if __name__ == '__main__':
-    data = StreetSatBase('data/train')
-    example = data[0]['street_image']
-    print(example.shape)
+    data = DataLoader(StreetSatTrain(), batch_size=16)
+    for idx, batch in enumerate(tqdm(data)):
+        sat_emb_vgg = batch["sat_emb"]
+        if sat_emb_vgg.shape[0] < 8:
+            print('heree!')
+            sat_emb_vgg = batch["sat_emb"]
+    

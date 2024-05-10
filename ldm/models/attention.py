@@ -1,3 +1,5 @@
+# adapted from umar jamil stable diffusion: https://github.com/hkproj/pytorch-stable-diffusion/blob/main/sd/diffusion.py
+
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -6,9 +8,7 @@ import math
 class SelfAttention(nn.Module):
     def __init__(self, n_heads, d_embed, in_proj_bias=True, out_proj_bias=True):
         super().__init__()
-        # This combines the Wq, Wk and Wv matrices into one matrix
         self.in_proj = nn.Linear(d_embed, 3 * d_embed, bias=in_proj_bias)
-        # This one represents the Wo matrix
         self.out_proj = nn.Linear(d_embed, d_embed, bias=out_proj_bias)
         self.n_heads = n_heads
         self.d_head = d_embed // n_heads
@@ -80,7 +80,6 @@ class CrossAttention(nn.Module):
 
         input_shape = x.shape
         batch_size, sequence_length, d_embed = input_shape
-        # Divide each embedding of Q into multiple heads such that d_heads * n_heads = Dim_Q
         interim_shape = (batch_size, -1, self.n_heads, self.d_head)
         
         # (Batch_Size, Seq_Len_Q, Dim_Q) -> (Batch_Size, Seq_Len_Q, Dim_Q)
