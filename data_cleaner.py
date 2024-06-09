@@ -101,5 +101,5 @@ if __name__ == "__main__":
 
     # remove_non_mainland_image_pairs(street_dir, satellite_dir)
     # remove_missing(street_dir, satellite_dir)
-    # remove_mismatches(street_dir, satellite_dir)
+    remove_mismatches(street_dir, satellite_dir)
 
