@@ -18,18 +18,22 @@ from einops import rearrange, repeat
 from tqdm import tqdm
 
 class SatelliteHead(nn.Module):
-    def __init__(self, in_channels, out_channels=None):
+    def __init__(self, in_channels, out_channels=None, identity=False):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels if out_channels else in_channels
+        self.identity = identity
         self.inblock = ResBlock(self.in_channels, self.out_channels)
         self.outblock = AttnBlock(self.out_channels)
 
     def forward(self, sat_emb, lat_emb, lng_emb):
         bs, c, h, w = sat_emb.shape
 
-        se = self.inblock(sat_emb)
-        se = self.outblock(se)
+        if not self.identity:
+            se = self.inblock(sat_emb)
+            se = self.outblock(se)
+        else:
+            se = sat_emb
         se = se.reshape(bs, self.out_channels, h * w)
         se = torch.cat([se, lat_emb.unsqueeze(-1), lng_emb.unsqueeze(-1)], dim=-1)
         se = se.permute(0,2,1).contiguous()
