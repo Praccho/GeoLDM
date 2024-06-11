@@ -9,7 +9,7 @@ model:
       image_size: 16
       p_uncond: 0.2
       use_cfg: True
-      cfg_scale: 3
+      cfg_scale: 5
       backbone_config: 
         target: ldm.models.unet.UNET
       first_stage_config:

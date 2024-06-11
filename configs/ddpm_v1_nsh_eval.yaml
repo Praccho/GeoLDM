@@ -31,3 +31,4 @@ model:
         target: ldm.models.ddpm.SatelliteHead
         params:
           in_channels: 128
+          identity: True

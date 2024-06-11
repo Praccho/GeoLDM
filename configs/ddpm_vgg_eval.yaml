@@ -1,5 +1,6 @@
 #unet
 model:
+    base_learning_rate: 1.0e-06
     target: ldm.models.ddpm.LatentDiffusion
     params:
       monitor: 'val/loss'
@@ -9,7 +10,7 @@ model:
       p_uncond: 0.2
       use_cfg: True
       cfg_scale: 5
-      ckpt_path: checkpoints/ddpm/ldm_v1.ckpt
+      cond_key: sat_emb_vgg
       backbone_config: 
         target: ldm.models.unet.UNET
       first_stage_config:
@@ -27,7 +28,9 @@ model:
             ch_mult: [1,2,4]      
             num_res_blocks: 2
             attn_resolutions: [16]
+          ckpt_path: checkpoints/vae/16x16x4_vae.ckpt
       cond_stage_config:
         target: ldm.models.ddpm.SatelliteHead
         params:
-          in_channels: 128
+          in_channels: 512
+          out_channels: 128
