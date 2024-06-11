@@ -9,7 +9,7 @@ model:
       p_uncond: 0.2
       use_cfg: True
       cfg_scale: 5
-      ckpt_path: checkpoints/ddpm/ldm_v1.ckpt
+      ckpt_path: checkpoints/ddpm/ldm_satlasnsh.ckpt
       backbone_config: 
         target: ldm.models.unet.UNET
       first_stage_config:

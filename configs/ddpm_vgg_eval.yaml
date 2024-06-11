@@ -10,6 +10,7 @@ model:
       p_uncond: 0.2
       use_cfg: True
       cfg_scale: 5
+      ckpt_path: checkpoints/ddpm/ldm_vgg.ckpt
       cond_key: sat_emb_vgg
       backbone_config: 
         target: ldm.models.unet.UNET
