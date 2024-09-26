@@ -1,0 +1,3 @@
+[submodule "GeoData"]
+	path = GeoData
+	url = https://github.com/Praccho/GeoData
