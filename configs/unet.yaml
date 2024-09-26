@@ -1,0 +1,43 @@
+#unet
+model:
+    target: ldm.models.unet.UNetModel
+    params:
+      image_size: 64
+      in_channels: 3
+      out_channels: 3
+      model_channels: 224
+      attention_resolutions:
+      # note: this isn\t actually the resolution but
+      # the downsampling factor, i.e. this corresnponds to
+      # attention on spatial resolution 8,16,32, as the
+      # spatial resolution of the latents is 64 for f4
+      - 8
+      - 4
+      - 2
+      num_res_blocks: 2
+      channel_mult:
+      - 1
+      - 2
+      - 3
+      - 4
+      num_head_channels: 32
+
+data:
+  target: main.StreetSatDataModule
+  params:
+    batch_size: 8
+    train:
+      target: data.datasets.StreetSatTrain
+    val:
+      target: data.datasets.StreetSatVal
+
+lightning:
+  callbacks:
+    image_logger:
+      target: main.ImageLogger
+      params:
+        batch_frequency: 5000
+        max_images: 8
+        increase_log_steps: True
+  trainer:
+    accumulate_grad_batches: 4

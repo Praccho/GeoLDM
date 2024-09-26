@@ -1,0 +1,56 @@
+#unet
+model:
+    base_learning_rate: 1.0e-06
+    target: ldm.models.ddpm.LatentDiffusion
+    params:
+      monitor: 'val/loss'
+      timesteps: 1000
+      embed_size: 4
+      image_size: 16
+      p_uncond: 0.2
+      use_cfg: True
+      cfg_scale: 5
+      cond_key: sat_emb_vgg
+      backbone_config: 
+        target: ldm.models.unet.UNET
+      first_stage_config:
+        target: ldm.models.autoencoder.VAE
+        params:
+          emb_dim: 4
+          lossconfig:
+            target: torch.nn.Identity
+          ddconfig:
+            z_channels: 4
+            resolution: 64
+            in_ch: 3
+            out_ch: 3
+            ch: 32
+            ch_mult: [1,2,4]      
+            num_res_blocks: 2
+            attn_resolutions: [16]
+          ckpt_path: checkpoints/vae/16x16x4_vae.ckpt
+      cond_stage_config:
+        target: ldm.models.ddpm.SatelliteHead
+        params:
+          in_channels: 512
+          out_channels: 128
+
+data:
+  target: main.StreetSatDataModule
+  params:
+    batch_size: 16
+    train:
+      target: data.datasets.StreetSatTrain
+    val:
+      target: data.datasets.StreetSatVal   
+lightning:
+  callbacks:
+    image_logger:
+      target: main.ImageLogger
+      params:
+        batch_frequency: 5000
+        max_images: 8
+        increase_log_steps: True
+  trainer:
+      benchmark: True
+

@@ -1,0 +1,7 @@
+torch 
+torchvision 
+torchaudio
+torchmetrics==0.11.4
+pytorch-lightning==1.6.5
+einops==0.4.0
+taming-transformers==0.0.1
